@@ -1,3 +1,4 @@
+
 import { helloCommand, handleHello } from "./hello";
 import { randomCommand, handleRandom } from "./random";
 import { createCommand, handleCreate } from "./create";
@@ -6,6 +7,7 @@ import { joinCommand, handleJoin } from "./join";
 import { kickCommand, handleKick } from "./kick";
 import { manageCommand, handleManage } from "./manage";
 import { flipCoinCommand, handleFlipCoin } from "./flipCoin";
+import { githubCommand, handleGithub } from "./github";
 
 /**
  * Central registry for slash commands:
