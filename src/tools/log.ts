@@ -28,12 +28,11 @@ const issueLogFile = createRotatingFileTransport("issues", "warning");
  * Creates a new named logger.
  *
  * @param name The name to attach to this logger.
- * @param level The level this displays by default.
  * @returns A winston logger ready for use.
  */
-export function createNewLogger(name: string, level: string) {
+export function createNewLogger(name: string) {
   return createLogger({
-    level: level,
+    level: "info",
     format: format.combine(
       format.label({ label: name }),
       format.timestamp(),
@@ -46,4 +45,4 @@ export function createNewLogger(name: string, level: string) {
 }
 
 /** The main, non-specfic logger. */
-export const logger = createNewLogger("main", "info");
+export const logger = createNewLogger("main");

@@ -6,7 +6,7 @@ import { createNewLogger } from "../tools/log";
 let client: Client<boolean>;
 
 // The logger that is related to all bot communications.
-export const logger = createNewLogger("bot", "verbose");
+export const logger = createNewLogger("bot");
 
 /**
  * Gets the current client instance of the discord bot.
