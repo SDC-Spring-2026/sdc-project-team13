@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SDC-Fall-2025/sdc-project-team13.git"
+    "url": "git+https://github.com/SDC-Spring-2026/sdc-project-team13.git"
   },
   "keywords": [
     "discord",
@@ -32,7 +32,7 @@
     "tool",
     "pm"
   ],
-  "author": "SDC Fall 2025 - Team 13",
+  "author": "SDC Spring 2026 - Team 13",
   "contributors": [
     {
       "name": "Connor Furby",
@@ -49,9 +49,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/SDC-Fall-2025/sdc-project-team13/issues"
+    "url": "https://github.com/SDC-Spring-2026/sdc-project-team13/issues"
   },
-  "homepage": "https://github.com/SDC-Fall-2025/sdc-project-team13#readme",
+  "homepage": "https://github.com/SDC-Spring-2026/sdc-project-team13#readme",
   "devDependencies": {
     "@eslint/js": "^9.38.0",
     "@eslint/markdown": "^7.5.0",
@@ -69,6 +69,7 @@
     "typescript-eslint": "^8.46.2"
   },
   "dependencies": {
+    "@octokit/rest": "^22.0.1",
     "discord.js": "^14.23.2",
     "octokit": "^5.0.4",
     "winston": "^3.18.3",
