@@ -28,7 +28,7 @@ You're good to contribute!
    - `GUILD_ID=...`
 3. Invite the bot to your test server
 4. Register commands (guild/dev):
-   - `yarn register:dev`
+   - `yarn dev:setup`
 5. Run
    - Dev: `yarn dev`
    - Prod: `yarn build && yarn start`

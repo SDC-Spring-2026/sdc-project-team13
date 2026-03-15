@@ -1,4 +1,5 @@
 import type { ChatInputCommandInteraction } from "discord.js";
+import { ChatInputCommandInteraction, EmbedBuilder } from "discord.js";
 import { getOctokit } from "../../integrations/github";
 
 /**
@@ -111,14 +112,30 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
     if (sub === "repo") {
       const { data } = await octo.repos.get({ owner, repo });
 
-      await interaction.editReply(
-        `**${owner}/${repo}**\n` +
-          `Default branch: ${data.default_branch}\n` +
-          `Visibility: ${data.private ? "private" : "public"}\n` +
-          `Stars: ${data.stargazers_count}  Forks: ${data.forks_count}  Open issues: ${data.open_issues_count}\n` +
-          `Updated: ${new Date(data.updated_at).toLocaleString()}\n` +
-          `${data.description ?? "No description provided."}`
-      );
+      // get most recent commit for display
+      const { data: recentCommits } = await octo.repos.listCommits({ owner, repo, per_page: 1 });
+      const latest = recentCommits[0];
+
+      // create the message to be displayed in discord using Discord.js's EmbedBuilder
+      const embed = new EmbedBuilder()
+        .setTitle(`${owner}/${repo}`)
+        .setURL(data.html_url)
+        .setColor(0x00cc66)
+        .addFields(
+            {name: '🌲 Default branch', value: data.default_branch, inline: true},
+            {name: '👀 Visibility', value: data.private ? "private" : "public", inline: true},
+            {name: '🌠 Stars', value: String(data.stargazers_count), inline: true},
+            {name: '🍴 Forks', value: String(data.forks_count), inline: true},
+            {name: '🫨 Issues', value: String(data.open_issues_count), inline: true},
+            {name: "🗣️ Language",    value: data.language ?? "Unknown", inline: true},
+            {name: '📝 Latest Commit', value: latest.commit.message.split('\n')[0]},
+            {name: '👤 By', value: latest.commit.author?.name ?? 'unknown', inline: true},
+            {name: '🕰️ When', value: new Date(latest.commit.author?.date ?? '').toLocaleString(), inline: true}
+          )
+          .setFooter({text: 'Brought to you be Cache 🤖'})
+          .setThumbnail(data.owner.avatar_url);
+
+      await interaction.editReply({ embeds: [embed] });
       return;
     }
 
