@@ -113,7 +113,7 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
       const { data } = await octo.repos.get({ owner, repo });
 
       // get most recent commit for display
-      const { data: recentCommits } = await octo.repos.listCommits({ owner, repo, per_page: 1 });
+      const {data: recentCommits} = await octo.repos.listCommits({owner, repo, per_page: 1});
       const latest = recentCommits[0];
 
       // create the message to be displayed in discord using Discord.js's EmbedBuilder
@@ -135,7 +135,7 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
           .setFooter({text: 'Brought to you be Cache 🤖'})
           .setThumbnail(data.owner.avatar_url);
 
-      await interaction.editReply({ embeds: [embed] });
+      await interaction.editReply({embeds: [embed]});
       return;
     }
 
@@ -147,38 +147,41 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
       const limitRaw = interaction.options.getInteger("limit") ?? 5;
       const perPage = Math.max(1, Math.min(20, limitRaw)); // clamp between 1–20
 
-      // Fetch commits from GitHub
-      const { data } = await octo.repos.listCommits({
-        owner,
-        repo,
-        sha: branch,
-        per_page: perPage,
-      });
+      // repo object - has html_url, avatar_url, etc.
+      const { data: repoData } = await octo.repos.get({ owner, repo });
+
+      // commits array - has the list of commits
+      const { data: commits } = await octo.repos.listCommits({ owner, repo, per_page: perPage });
 
       // No commits found (e.g. empty repo or wrong branch)
-      if (!data.length) {
+      if (!commits.length) {
         await interaction.editReply(
           "No commits found. Check the branch name or try again."
         );
         return;
       }
 
-      // Format commit list for Discord message
-      const lines = data.map((c) => {
-        const sha = c.sha?.slice(0, 7);
-        const msg = (c.commit?.message ?? "").split("\n")[0];
-        const author = c.commit?.author?.name ?? "unknown";
-        const t = c.commit?.author?.date
-          ? new Date(c.commit.author.date).toLocaleString()
-          : "";
-        return `\`${sha}\` ${msg} — ${author} at ${t}`;
+      // lambda expression that builds a string full of all the commit data for display
+      const lines = commits.map((c, i) => {
+        const sha = c.sha?.slice(0, 7); // get first 7 characters of commit hash
+        const msg = c.commit?.message.split('\n')[0]; // get commit message
+        const author = c.commit?.author?.name ?? 'unknown'; // get author name
+        const date = new Date(c.commit?.author?.date ?? '').toLocaleDateString(); // get timestamp
+        return `**${i + 1}.** [\`${sha}\`](https://github.com/${owner}/${repo}/commit/${c.sha}) ${msg}\n└ ${author} • ${date}`;
       });
 
+      // create the message to be displayed in discord using Discord.js's EmbedBuilder
+      const embed2 = new EmbedBuilder()
+        .setTitle(`${owner}/${repo}`)
+        .setURL(repoData.html_url)
+        .setColor(660066)
+        .setDescription(lines.join('\n\n'))
+        .setFooter({text: 'Brought to you be Cache 🤖'})
+        .setThumbnail(repoData.owner.avatar_url);
+
+
       // Send commit summary
-      await interaction.editReply(
-        `**${owner}/${repo}** ${branch ? `(${branch})` : ""}\n` +
-          lines.join("\n")
-      );
+      await interaction.editReply({embeds: [embed2]});
       return;
     }
 
