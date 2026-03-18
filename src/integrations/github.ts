@@ -7,7 +7,7 @@ import { createNewLogger } from "../tools/log";
 type OctokitType = import("@octokit/rest").Octokit;
 
 // Create a dedicated logger for GitHub integration.
-const log = createNewLogger("github", "verbose");
+const log = createNewLogger("github");
 
 // Store a single Octokit instance so it’s reused (singleton pattern).
 let octo: OctokitType | null = null;

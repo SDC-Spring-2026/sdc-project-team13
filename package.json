@@ -8,11 +8,11 @@
   "scripts": {
     "dev:lint": "esw --watch ./src",
     "dev:compile": "tsx --watch --env-file=.env ./src/index.ts",
-    "dev": "conc -c green,blue -n ESLint,TSX 'yarn dev:lint' 'yarn dev:compile'",
+    "dev": "concurrently -c green,blue -n ESLint,TSX \"yarn dev:lint\" \"yarn dev:compile\"",
     "stylize": "prettier . --write",
     "lint": "eslint ./src",
     "compile": "tsc",
-    "build": "yarn lint; yarn compile",
+    "build": "yarn lint && yarn compile",
     "start": "node --env-file=.env ./dist/index.js",
     "register:dev": "tsx --env-file=.env ./src/bot/registerCommands.ts"
   },
@@ -67,6 +67,7 @@
     "typescript-eslint": "^8.46.2"
   },
   "dependencies": {
+    "@google/genai": "^1.46.0",
     "@octokit/rest": "^22.0.1",
     "discord.js": "^14.23.2",
     "octokit": "^5.0.4",
