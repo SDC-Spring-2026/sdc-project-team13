@@ -21,10 +21,10 @@ This table holds all projects currently in SDC. **Many2One** allows for multiple
 
 This table holds information about project members and their related accounts. **One2One** as we want to ensure 1 user entry per member.
 
-| Column        | Type   | Purpose                                                                                             |
-| :------------ | :----- | :-------------------------------------------------------------------------------------------------- |
-| `discord_id`  | `TEXT` | The [Discord](https://discord.com) account ID associated w/ a member. ex. `XXXXXXXXXXXXXXXXXX`      |
-| `github_user` | `TEXT` | The [GitHub](https://github.com) username associated w/ a member. ex/ `gavinhsmith`, `cash06`, etc. |
+| Column    | Type   | Purpose                                                                                             |
+| :-------- | :----- | :-------------------------------------------------------------------------------------------------- |
+| `discord` | `TEXT` | The [Discord](https://discord.com) account ID associated w/ a member. ex. `XXXXXXXXXXXXXXXXXX`      |
+| `github`  | `TEXT` | The [GitHub](https://github.com) username associated w/ a member. ex/ `gavinhsmith`, `cash06`, etc. |
 
 ### Teams
 
@@ -62,14 +62,3 @@ This table holds information related to team channel history. **Many2Many**.
 | `team_id`     | `TEXT` | The team UUIDv4 that a message is associated with. See [Teams](#teams).                     |
 | `user_id`     | `TEXT` | The member UUIDv4 that a message is associated with. See [Members](#members).               |
 | `msg_content` | `TEXT` | The content of a message. ex. `Hello!`                                                      |
-
-### SessionHistory
-
-This table holds information about specific chat sessions. **One2One**
-
-| Column       | Type   | Purpose                                             |
-| :----------- | :----- | :-------------------------------------------------- |
-| `session_id` | `TEXT` | A UUIDv4 that references the session.               |
-| `channel_id` | `TEXT` | A UUIDv4 that groups multiple attachments together. |
-| `user_id`    | `TEXT` | The name of the file. ex. `file.ts`                 |
-| `timestamp`  | `TEXT` | The content of the file.                            |
