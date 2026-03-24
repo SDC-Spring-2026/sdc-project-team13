@@ -10,7 +10,7 @@ export const db_teams: DatabaseTeamsManager = {
       try {
         // Build query to count teams, optionally filtering by term
         let query = "SELECT COUNT(*) as count FROM Teams";
-        let params: any[] = [];
+        const params: (string | number)[] = [];
         if (term) {
           // Filter teams by slug pattern like "term-team%"
           query += " WHERE slug LIKE ?";

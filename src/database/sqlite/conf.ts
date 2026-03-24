@@ -49,7 +49,7 @@ export const db_conf: DatabaseConfManager = {
       function createColOptsString(opts?: Partial<TableGenColumnOpts>): string {
         if (!opts) return "";
 
-        let conf: string[] = [];
+        const conf: string[] = [];
 
         // Just append the correct SQL options string.
         if (opts.auto_increment) conf.push("AUTOINCREMENT");
@@ -68,7 +68,7 @@ export const db_conf: DatabaseConfManager = {
         logger.verbose(`- Checking table "${name}"...`);
 
         // Save column def strings
-        let col_str = cols
+        const col_str = cols
           .map((c) => `${c.name} ${c.type} ${createColOptsString(c.opts)}`)
           .join(",");
 
