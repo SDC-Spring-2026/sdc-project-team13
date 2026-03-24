@@ -8,7 +8,7 @@ export const db_members: DatabaseMembersManager = {
 
   // Get member teams
   getMemberTeams(discord, inactives) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       // Get all team associations.
       const team_assocs = sql
         .prepare<
@@ -54,7 +54,7 @@ export const db_members: DatabaseMembersManager = {
 
   // Register member.
   registerMember(discord, github) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       sql
         .prepare(
           "INSERT INTO Members (discord, github) VALUES (@discord, @github)"
@@ -67,11 +67,23 @@ export const db_members: DatabaseMembersManager = {
 
   // Update member registration.
   updateMemberRegistration(discord, github) {
-    return new Promise((resolve, reject) => {});
+    return new Promise((resolve) => {
+      sql
+        .prepare("UPDATE Members SET github = @github WHERE discord = @discord")
+        .run({ discord, github });
+
+      resolve();
+    });
   },
 
   // Unregister member.
-  unregisterMember(discord_id) {
-    return new Promise((resolve, reject) => {});
+  unregisterMember(discord) {
+    return new Promise((resolve) => {
+      sql
+        .prepare("DELETE FROM Members WHERE discord = @discord")
+        .run({ discord });
+
+      resolve();
+    });
   }
 };
