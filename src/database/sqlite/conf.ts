@@ -1,20 +1,21 @@
 // Import sqlite3 module, database struct, and path join.
 import Database, { type Database as SQLDatabase } from "better-sqlite3";
-import { DatabaseManager, dbLogger as logger } from ".";
+import { dbLogger as logger } from "..";
 import { join } from "path";
 import {
   alreadyClosedError,
   alreadyOpenError,
   noOpWhileClosedError
-} from "./errors";
-import tables from "./tables.json";
+} from "../errors";
+import tables from "../tables.json";
+import { DatabaseConfManager } from "../defs/conf";
 
 // This is the reference to the current database instance.
-let sql: SQLDatabase;
+export let sql: SQLDatabase;
 
 // This variable keeps track of the ready state of the db.
 // (i.e. is a current connection open or nah)
-let ready = false;
+export let ready = false;
 
 // Defines columns from the table generator file.
 interface TableGenColumnOpts {
@@ -29,8 +30,7 @@ interface TableGenColumn {
   opts?: Partial<TableGenColumnOpts>;
 }
 
-// Export the proper tools
-export const db: DatabaseManager = {
+export const db_conf: DatabaseConfManager = {
   // Return whatever ready is at this time.
   isReady() {
     return ready;
@@ -127,6 +127,4 @@ export const db: DatabaseManager = {
   getRawDBInstance() {
     return sql;
   }
-
-  // Members
 };
