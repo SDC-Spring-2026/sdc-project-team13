@@ -1,0 +1,63 @@
+[
+  {
+    "name": "Members",
+    "cols": [
+      {
+        "name": "discord",
+        "type": "TEXT",
+        "opts": { "is_primary": true, "is_unique": true, "not_null": true }
+      },
+      {
+        "name": "github",
+        "type": "TEXT",
+        "opts": { "is_unique": true }
+      }
+    ]
+  },
+  {
+    "name": "Teams",
+    "cols": [
+      {
+        "name": "slug",
+        "type": "TEXT",
+        "opts": { "is_primary": true, "is_unique": true }
+      },
+      { "name": "role_id", "type": "TEXT" },
+      { "name": "channel_id", "type": "TEXT" },
+      { "name": "is_active", "type": "BOOLEAN", "opts": { "not_null": true } }
+    ]
+  },
+  {
+    "name": "TeamAssociations",
+    "cols": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "opts": { "is_primary": true }
+      },
+      { "name": "user_id", "type": "TEXT", "opts": { "not_null": true } },
+      { "name": "team_slug", "type": "TEXT", "opts": { "not_null": true } },
+      { "name": "perm_level", "type": "INTEGER", "opts": { "not_null": true } }
+    ]
+  },
+  {
+    "name": "Projects",
+    "cols": [
+      { "name": "slug", "type": "TEXT", "opts": { "is_primary": true } },
+      { "name": "name", "type": "TEXT", "opts": { "not_null": true } },
+      { "name": "team_slug", "type": "TEXT", "opts": { "not_null": true } },
+      { "name": "is_active", "type": "BOOLEAN", "opts": { "not_null": true } }
+    ]
+  },
+  {
+    "name": "MessageHistory",
+    "cols": [
+      { "name": "id", "type": "INTEGER", "opts": { "is_primary": true } },
+      { "name": "team_slug", "type": "TEXT" },
+      { "name": "user_id", "type": "TEXT" },
+      { "name": "scope", "type": "TEXT" },
+      { "name": "timestamp", "type": "TEXT" },
+      { "name": "content", "type": "TEXT" }
+    ]
+  }
+]

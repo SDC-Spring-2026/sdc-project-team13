@@ -1,3 +1,5 @@
+// Direct Operation Errors
+
 /** Creates an error for when that database is already open during an attempt to open it. */
 export function alreadyOpenError() {
   return new Error("Database is already open.");
@@ -11,4 +13,10 @@ export function alreadyClosedError() {
 /** Creates an error for when that database can't perform an operation because it is closed. */
 export function noOpWhileClosedError() {
   return new Error("Can't perform operation while database is closed.");
+}
+
+export function noDuplicateEntryError(props?: string[]) {
+  return new Error(
+    `Cannot create/update entry that has duplicate properties${props ? ": " + props.join(", ") : "."}`
+  );
 }
