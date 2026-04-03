@@ -56,4 +56,6 @@ export interface DatabaseProjectManager {
    * @returns If the project was successfully removed.
    */
   removeProject(project_slug: string): Promise<void>;
+
+  getProjectByName(name: string): Promise<Project | undefined>;
 }

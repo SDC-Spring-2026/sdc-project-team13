@@ -4,18 +4,16 @@ import { Member } from "../defs/members";
 
 export const db_team_assoc: DatabaseTeamAssocManager = {
   getTeamMembers(team_slug) {
-    return new Promise((resolve, reject) => {
-      try {
-        // Join TeamAssociations with Members to get full member info
-        const stmt = sql.prepare(
-          "SELECT m.* FROM Members m JOIN TeamAssociations ta ON m.discord = ta.user_id WHERE ta.team_slug = ?"
-        );
-        const results = stmt.all(team_slug) as Member[];
-        resolve(results);
-      } catch (error) {
-        reject(error);
-      }
-    });
+      return new Promise((resolve, reject) => {
+          try {
+              const results = sql
+                  .prepare("SELECT user_id as discord FROM TeamAssociations WHERE team_slug = ?")
+                  .all(team_slug) as { discord: string }[];
+              resolve(results as any);
+          } catch (error) {
+              reject(error);
+          }
+      });
   },
   addMemberToTeam(team_slug, discord_id, perm_level) {
     return new Promise((resolve, reject) => {

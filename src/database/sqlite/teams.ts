@@ -70,7 +70,7 @@ export const db_teams: DatabaseTeamsManager = {
           .prepare(
             "UPDATE Teams SET role_id = ?, channel_id = ?, is_active = 1 WHERE slug = ?"
           )
-          .run(channel_id, role_id, team_slug);
+          .run(role_id, channel_id, team_slug);
         // Add the leader to the team associations with leader permission
         sql
           .prepare(

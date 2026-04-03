@@ -21,7 +21,7 @@ export const db_projects: DatabaseProjectManager = {
     return new Promise((resolve, reject) => {
       try {
         // Extract team number from team_slug (e.g., "sp2026-team1" -> 1)
-        const team_number = parseInt(team_slug.split("-")[2]);
+        const team_number = parseInt(team_slug.split("team")[1]);
         // Generate project slug
         const project_slug = generateProjectSlug(display_name, team_number);
         // Insert new project as active
@@ -85,5 +85,17 @@ export const db_projects: DatabaseProjectManager = {
         reject(error);
       }
     });
+  },
+  getProjectByName(name) {
+      return new Promise((resolve, reject) => {
+          try {
+              const result = sql
+                  .prepare("SELECT * FROM Projects WHERE LOWER(name) = LOWER(?)")
+                  .get(name) as Project | undefined;
+              resolve(result);
+          } catch (error) {
+              reject(error);
+          }
+      });
   }
 };
