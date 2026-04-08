@@ -57,7 +57,8 @@
     "@eslint/markdown": "^7.5.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.9.1",
-    "better-sqlite3": "^12.4.1",
+    "@types/pg": "^8.20.0",
+    "better-sqlite3": "^12.8.0",
     "concurrently": "^9.2.1",
     "eslint": "^9.38.0",
     "eslint-watch": "^8.0.0",
@@ -72,6 +73,7 @@
     "@octokit/rest": "^22.0.1",
     "discord.js": "^14.23.2",
     "octokit": "^5.0.4",
+    "pg": "^8.20.0",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0"
   }
