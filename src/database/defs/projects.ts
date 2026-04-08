@@ -56,11 +56,4 @@ export interface DatabaseProjectManager {
    * @returns If the project was successfully removed.
    */
   removeProject(project_slug: string): Promise<void>;
-
-  /**
-   * Find a project by its display name (case-insensitive).
-   * @param name The display name to search for.
-   * @returns The matching project, or undefined if not found.
-   */
-  getProjectByName(name: string): Promise<Project | undefined>;
 }

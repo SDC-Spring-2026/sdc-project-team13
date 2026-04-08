@@ -14,7 +14,7 @@ import { githubCommand, handleGithub } from "./github";
  * - commandDefinitions: used by registerCommands.ts to sync with Discord
  * - commandHandlers: used at runtime to route interactions by name
  */
-export const commandDefinitions = [helloCommand, randomCommand, createCommand, groupCommand, joinCommand, kickCommand, manageCommand, flipCoinCommand];
+export const commandDefinitions = [helloCommand, randomCommand, createCommand, groupCommand, joinCommand, kickCommand, manageCommand, flipCoinCommand, githubCommand];
 export const commandHandlers = new Map([
     [helloCommand.name, handleHello],
     [randomCommand.name, handleRandom],
@@ -23,5 +23,6 @@ export const commandHandlers = new Map([
     [joinCommand.name, handleJoin],
     [kickCommand.name, handleKick],
     [manageCommand.name, handleManage],
-    [flipCoinCommand.name, handleFlipCoin]
+    [flipCoinCommand.name, handleFlipCoin],
+    [githubCommand.name, handleGithub]
 ]);
