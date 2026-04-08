@@ -48,7 +48,7 @@ export interface DatabaseProjectManager {
    */
   changeProjectActiveStatus(
     project_slug: string,
-    is_active: string
+    is_active: boolean
   ): Promise<void>;
   /**
    * Remove a project from the database.
@@ -56,4 +56,10 @@ export interface DatabaseProjectManager {
    * @returns If the project was successfully removed.
    */
   removeProject(project_slug: string): Promise<void>;
+  /**
+   * Find a project by its display name (case-insensitive).
+   * @param name The display name to search for.
+   * @returns The matching project, or undefined.
+   */
+  getProjectByName(name: string): Promise<Project | undefined>;
 }
