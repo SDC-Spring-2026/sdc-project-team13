@@ -29,7 +29,7 @@ export type DatabaseManager = DatabaseConfManager &
 export const db: DatabaseManager = {
   // Conf — delegated to the driver.
   isReady: () => driver().isReady(),
-  initiate: () => driver().initiate(),
+  initiate: async () => { const d = await getDriver(); return d.initiate(); },
   setup: () => driver().setup(),
   close: () => driver().close(),
   getRawDBInstance: () => driver().getRawDBInstance(),
