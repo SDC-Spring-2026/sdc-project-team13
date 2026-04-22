@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, ChannelType, MessageFlags } from "discord.js";
 import { db } from "../../database";
 import { createNewLogger } from "../../tools/log";
+import { requireRegistered } from "./requireRegistered";
 
 const logger = createNewLogger("cmd:create");
 
@@ -22,12 +23,6 @@ export const createCommand = {
               name: "description",
               description: "project description",
               required: true
-          },
-          {
-              type: 3, // STRING TYPE
-              name: "github",
-              description: "your GitHub username (only needed the first time)",
-              required: false
           }
         ]
 };
@@ -36,13 +31,14 @@ export const createCommand = {
 export async function handleCreate(interaction: ChatInputCommandInteraction) {
     const project = interaction.options.getString("project", true);
     const description = interaction.options.getString("description", true);
-    const github = interaction.options.getString("github") ?? undefined;
 
     const guild = interaction.guild;
     if (!guild) {
         await interaction.reply({ flags: MessageFlags.Ephemeral, content: "This command can only be used in a server!" });
         return;
     }
+
+    if (!await requireRegistered(interaction)) return;
 
     await interaction.deferReply();
 
@@ -84,12 +80,6 @@ export async function handleCreate(interaction: ChatInputCommandInteraction) {
             interaction.user.id
         );
         await db.createNewProject(project, teamSlug);
-
-        const existingMember = await db.getMember(interaction.user.id);
-        if (!existingMember) {
-            await db.registerMember(interaction.user.id, github);
-            logger.info(`Registered new member ${interaction.user.tag} (github: ${github ?? "none"})`);
-        }
 
         logger.info(`Project "${project}" created by ${interaction.user.tag} (team: ${teamSlug}, channel: ${channel.id}, role: ${role.id})`);
         await interaction.editReply(

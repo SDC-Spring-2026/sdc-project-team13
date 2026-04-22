@@ -2,6 +2,7 @@ import { ChatInputCommandInteraction } from "discord.js";
 import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
 import { createNewLogger } from "../../tools/log";
+import { requireRegistered } from "./requireRegistered";
 
 const logger = createNewLogger("cmd:group");
 
@@ -31,6 +32,8 @@ export async function handleGroup(interaction: ChatInputCommandInteraction) {
         await interaction.reply({ content: "This command can only be used in a server!" });
         return;
     }
+
+    if (!await requireRegistered(interaction)) return;
 
     await interaction.deferReply();
 

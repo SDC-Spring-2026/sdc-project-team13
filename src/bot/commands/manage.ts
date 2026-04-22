@@ -2,6 +2,7 @@ import { ChatInputCommandInteraction, MessageFlags } from "discord.js";
 import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
 import { createNewLogger } from "../../tools/log";
+import { requireRegistered } from "./requireRegistered";
 
 const logger = createNewLogger("cmd:manage");
 
@@ -38,6 +39,8 @@ export async function handleManage(interaction: ChatInputCommandInteraction) {
         await interaction.reply({ flags: MessageFlags.Ephemeral, content: "This command can only be used in a server!" });
         return;
     }
+
+    if (!await requireRegistered(interaction)) return;
 
     await interaction.deferReply();
 

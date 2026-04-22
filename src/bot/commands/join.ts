@@ -8,6 +8,7 @@ import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
 import { TeamPermissionLevel } from "../../database/defs/team_assoc";
 import { createNewLogger } from "../../tools/log";
+import { requireRegistered } from "./requireRegistered";
 
 const logger = createNewLogger("cmd:join");
 
@@ -23,12 +24,6 @@ export const joinCommand = {
               name: "name",
               description: "Name of group",
               required: true
-          },
-          {
-              type: 3, // STRING TYPE
-              name: "github",
-              description: "your GitHub username (only needed the first time)",
-              required: false
           }
       ]
 };
@@ -36,13 +31,14 @@ export const joinCommand = {
 /** Handles /join interactions. */
 export async function handleJoin(interaction: ChatInputCommandInteraction) {
     const name = interaction.options.getString("name", true);
-    const github = interaction.options.getString("github") ?? undefined;
     const guild = interaction.guild;
 
     if (!guild) {
         await interaction.reply({ flags: MessageFlags.Ephemeral, content: "This command can only be used in a server!" });
         return;
     }
+
+    if (!await requireRegistered(interaction)) return;
 
     const formattedName = name.toLowerCase().replace(/\s+/g, '-');
 
@@ -93,12 +89,6 @@ export async function handleJoin(interaction: ChatInputCommandInteraction) {
             try {
                 // Add to database
                 await db.addMemberToTeam(teamSlug, interaction.user.id, TeamPermissionLevel.MEMBER);
-
-                const existingMember = await db.getMember(interaction.user.id);
-                if (!existingMember) {
-                    await db.registerMember(interaction.user.id, github);
-                    logger.info(`Registered new member ${interaction.user.tag} (github: ${github ?? "none"})`);
-                }
 
                 // Assign Discord role
                 const role = guild.roles.cache.find(r => r.name === formattedName);

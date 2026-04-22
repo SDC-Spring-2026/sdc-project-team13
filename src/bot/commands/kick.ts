@@ -1,4 +1,5 @@
 import { ChatInputCommandInteraction } from "discord.js";
+import { requireRegistered } from "./requireRegistered";
 
 /**
  * /kick — kicks a specified member from a group, if caller is group leader.
@@ -24,6 +25,8 @@ export const kickCommand = {
 
 /** Handles /kick interactions. */
 export async function handleKick(interaction: ChatInputCommandInteraction) {
+  if (!await requireRegistered(interaction)) return;
+
   const group = interaction.options.getString("group", true);
   const person = interaction.options.getString("person", true);
   await interaction.reply("Kicked " + person + " from group " + group);
