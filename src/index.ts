@@ -35,11 +35,10 @@ logger.info("Starting the program...");
                     await handler(interaction);
                 } catch (err) {
                     botLog.error(`Unhandled error in /${interaction.commandName}: ${err instanceof Error ? err.message : String(err)}`);
-                    const msg = { content: "There was an error while executing this command!", flags: MessageFlags.Ephemeral };
                     if (interaction.deferred || interaction.replied) {
-                        await interaction.editReply(msg).catch(() => {});
+                        await interaction.editReply({ content: "There was an error while executing this command!" }).catch(() => {});
                     } else {
-                        await interaction.reply(msg).catch(() => {});
+                        await interaction.reply({ content: "There was an error while executing this command!", flags: MessageFlags.Ephemeral }).catch(() => {});
                     }
                 }
             });
