@@ -1,4 +1,4 @@
-import { DatabaseTeamAssocManager } from "../defs/team_assoc";
+import { DatabaseTeamAssocManager, TeamPermissionLevel } from "../defs/team_assoc";
 import { Member } from "../defs/members";
 import { driver } from "../driver";
 
@@ -8,6 +8,14 @@ export const db_team_assoc: DatabaseTeamAssocManager = {
       "SELECT user_id AS discord FROM TeamAssociations WHERE team_slug = ?",
       [team_slug]
     ) as unknown as Promise<Member[]>;
+  },
+
+  async isTeamLeader(team_slug, discord_id) {
+    const rows = await driver().query<{ perm_level: number }>(
+      "SELECT perm_level FROM TeamAssociations WHERE team_slug = ? AND user_id = ?",
+      [team_slug, discord_id]
+    );
+    return rows.length > 0 && rows[0].perm_level === TeamPermissionLevel.LEADER;
   },
 
   async addMemberToTeam(team_slug, discord_id, perm_level) {

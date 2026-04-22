@@ -22,6 +22,13 @@ export interface DatabaseTeamAssocManager {
    */
   getTeamMembers(team_slug: string): Promise<Member[]>;
   /**
+   * Check if a discord user is the leader of a given team.
+   * @param team_slug The team slug id.
+   * @param discord_id Their discord user id.
+   * @returns True if the user holds LEADER permission on this team.
+   */
+  isTeamLeader(team_slug: string, discord_id: string): Promise<boolean>;
+  /**
    * Add a member to a team. A member can not be associated with a team more than once.
    * @param team_slug The team slug id.
    * @param discord_id Their discord user id.

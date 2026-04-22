@@ -85,12 +85,19 @@ export async function handleJoin(interaction: ChatInputCommandInteraction) {
     });
 
     collector.on('collect', async (buttonInteraction) => {
+        const isLeader = await db.isTeamLeader(teamSlug, buttonInteraction.user.id);
+        if (!isLeader) {
+            await buttonInteraction.reply({
+                flags: MessageFlags.Ephemeral,
+                content: "Only the team leader can accept or decline join requests."
+            });
+            return;
+        }
+
         if (buttonInteraction.customId === 'join_accept') {
             try {
-                // Add to database
                 await db.addMemberToTeam(teamSlug, interaction.user.id, TeamPermissionLevel.MEMBER);
 
-                // Assign Discord role
                 const role = guild.roles.cache.find(r => r.name === formattedName);
                 if (role) {
                     const member = await guild.members.fetch(interaction.user.id);

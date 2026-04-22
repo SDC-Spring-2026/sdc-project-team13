@@ -42,16 +42,20 @@ export async function handleManage(interaction: ChatInputCommandInteraction) {
 
     if (!await requireRegistered(interaction)) return;
 
+    const teamSlug = await resolveTeamSlug(guild, formattedProject);
+    if (!teamSlug) {
+        await interaction.reply({ flags: MessageFlags.Ephemeral, content: `No group found named **${project}**.` });
+        return;
+    }
+
+    if (!await db.isTeamLeader(teamSlug, interaction.user.id)) {
+        await interaction.reply({ flags: MessageFlags.Ephemeral, content: "Only the team leader can modify this project." });
+        return;
+    }
+
     await interaction.deferReply();
 
     try {
-        const teamSlug = await resolveTeamSlug(guild, formattedProject);
-        if (!teamSlug) {
-            await interaction.editReply(`No group found named **${project}**.`);
-            return;
-        }
-
-        // Find the project associated with this team
         const existing = await db.getProjectByName(formattedProject);
         if (!existing) {
             await interaction.editReply(`No project found named **${project}**.`);
@@ -60,7 +64,6 @@ export async function handleManage(interaction: ChatInputCommandInteraction) {
 
         await db.changeProjectDisplayName(existing.slug, description);
 
-        // Update the channel topic
         const channel = guild.channels.cache.find(c => c.name === formattedProject);
         if (channel && channel.isTextBased() && 'setTopic' in channel) {
             await channel.setTopic(description);
