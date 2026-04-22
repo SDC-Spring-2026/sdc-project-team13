@@ -1,5 +1,8 @@
 import { ChatInputCommandInteraction, ChannelType, MessageFlags } from "discord.js";
 import { db } from "../../database";
+import { createNewLogger } from "../../tools/log";
+
+const logger = createNewLogger("cmd:create");
 
 /**
  * /create — creates a new project group, sets the creator as the leader.
@@ -53,6 +56,7 @@ export async function handleCreate(interaction: ChatInputCommandInteraction) {
         );
 
         if (!category) {
+            logger.warn(`Teams category not found in guild ${guild.id} — rolling back role ${role.id}`);
             await role.delete("Teams category not found, rolling back");
             await interaction.editReply("Could not find the Teams category!");
             return;
@@ -74,13 +78,14 @@ export async function handleCreate(interaction: ChatInputCommandInteraction) {
         );
         await db.createNewProject(project, teamSlug);
 
+        logger.info(`Project "${project}" created by ${interaction.user.tag} (team: ${teamSlug}, channel: ${channel.id}, role: ${role.id})`);
         await interaction.editReply(
             `✅ Project **${project}** created!\nChannel: ${channel}\nRole: ${role}\nYou've been assigned as the leader!`
         );
     } catch (err) {
-        console.error(err);
-        if (channel) await channel.delete().catch(console.error);
-        if (role) await role.delete().catch(console.error);
+        logger.error(`Failed to create project "${project}" for ${interaction.user.tag}: ${err instanceof Error ? err.message : String(err)}`);
+        if (channel) await channel.delete().catch((e) => logger.error(`Failed to clean up channel during rollback: ${e instanceof Error ? e.message : String(e)}`));
+        if (role) await role.delete().catch((e) => logger.error(`Failed to clean up role during rollback: ${e instanceof Error ? e.message : String(e)}`));
         await interaction.editReply("Failed to create project. Check bot permissions and try again.");
     }
 }

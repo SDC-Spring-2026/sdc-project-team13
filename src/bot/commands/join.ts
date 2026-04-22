@@ -7,6 +7,9 @@ import { ChatInputCommandInteraction,
 import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
 import { TeamPermissionLevel } from "../../database/defs/team_assoc";
+import { createNewLogger } from "../../tools/log";
+
+const logger = createNewLogger("cmd:join");
 
 /**
  * /join — joins a specified group.
@@ -69,6 +72,7 @@ export async function handleJoin(interaction: ChatInputCommandInteraction) {
         components: [row]
     });
 
+    logger.info(`${interaction.user.tag} (${interaction.user.id}) sent join request to "${name}" (team: ${teamSlug})`);
     await interaction.reply({ flags: MessageFlags.Ephemeral, content: `✅ Join request sent to **${name}**!` });
 
     // Wait for a button click — 3 day window
@@ -90,18 +94,20 @@ export async function handleJoin(interaction: ChatInputCommandInteraction) {
                     await member.roles.add(role);
                 }
 
+                logger.info(`${interaction.user.tag} accepted into "${name}" (team: ${teamSlug}) by ${buttonInteraction.user.tag}`);
                 await buttonInteraction.update({
                     content: `✅ **${interaction.user.username}** has been accepted into **${name}**!`,
                     components: []
                 });
             } catch (err) {
-                console.error(err);
+                logger.error(`Failed to add ${interaction.user.tag} to "${name}": ${err instanceof Error ? err.message : String(err)}`);
                 await buttonInteraction.update({
                     content: `❌ Failed to add **${interaction.user.username}** to **${name}**.`,
                     components: []
                 });
             }
         } else {
+            logger.info(`${interaction.user.tag}'s request to join "${name}" declined by ${buttonInteraction.user.tag}`);
             await buttonInteraction.update({
                 content: `❌ **${interaction.user.username}**'s request to join **${name}** was declined.`,
                 components: []
@@ -112,6 +118,7 @@ export async function handleJoin(interaction: ChatInputCommandInteraction) {
     // Remove buttons after 3 days if no response
     collector.on('end', async (collected) => {
         if (collected.size === 0) {
+            logger.warn(`Join request from ${interaction.user.tag} to "${name}" expired with no response`);
             await requestMsg.edit({
                 content: `⏰ Join request from **${interaction.user.username}** expired.`,
                 components: []

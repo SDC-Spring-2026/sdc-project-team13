@@ -1,6 +1,8 @@
-import type { ChatInputCommandInteraction } from "discord.js";
 import { ChatInputCommandInteraction, EmbedBuilder } from "discord.js";
 import { getOctokit } from "../../integrations/github";
+import { createNewLogger } from "../../tools/log";
+
+const logger = createNewLogger("cmd:github");
 
 /**
  * The definition for the /github slash command.
@@ -135,6 +137,7 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
           .setFooter({text: 'Brought to you be Cache 🤖'})
           .setThumbnail(data.owner.avatar_url);
 
+      logger.info(`Repo info fetched for ${owner}/${repo} by ${interaction.user.tag}`);
       await interaction.editReply({embeds: [embed]});
       return;
     }
@@ -180,7 +183,7 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
         .setThumbnail(repoData.owner.avatar_url);
 
 
-      // Send commit summary
+      logger.info(`${perPage} commits fetched for ${owner}/${repo}${branch ? `@${branch}` : ""} by ${interaction.user.tag}`);
       await interaction.editReply({embeds: [embed2]});
       return;
     }
@@ -188,8 +191,8 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
     // Safety fallback for unexpected subcommands
     await interaction.editReply("Unknown subcommand.");
   } catch (err) {
-    // Graceful error handling with proper type check
     const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`GitHub API call failed for ${interaction.user.tag}: ${msg}`);
     await interaction.editReply(`GitHub call failed: ${msg}`);
   }
 }

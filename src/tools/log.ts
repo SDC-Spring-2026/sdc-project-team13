@@ -30,9 +30,9 @@ const issueLogFile = createRotatingFileTransport("issues", "warning");
  * @param name The name to attach to this logger.
  * @returns A winston logger ready for use.
  */
-export function createNewLogger(name: string) {
+export function createNewLogger(name: string, level: string = "info") {
   return createLogger({
-    level: "info",
+    level,
     format: format.combine(
       format.label({ label: name }),
       format.timestamp(),

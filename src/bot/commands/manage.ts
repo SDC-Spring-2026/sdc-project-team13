@@ -1,6 +1,9 @@
 import { ChatInputCommandInteraction, MessageFlags } from "discord.js";
 import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
+import { createNewLogger } from "../../tools/log";
+
+const logger = createNewLogger("cmd:manage");
 
 /**
  * /manage — changing of the details of a project.
@@ -60,9 +63,10 @@ export async function handleManage(interaction: ChatInputCommandInteraction) {
             await channel.setTopic(description);
         }
 
+        logger.info(`Project "${project}" description updated by ${interaction.user.tag}`);
         await interaction.editReply(`✅ **${project}** updated!`);
     } catch (err) {
-        console.error(err);
+        logger.error(`Failed to update project "${project}" for ${interaction.user.tag}: ${err instanceof Error ? err.message : String(err)}`);
         await interaction.editReply("Failed to update project.");
     }
 }

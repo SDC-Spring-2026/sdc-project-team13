@@ -7,6 +7,7 @@
   "packageManager": "yarn@4.10.3",
   "scripts": {
     "dev:compile": "tsx --watch --env-file=.env ./src/index.ts",
+    "dev:compile:no-watch": "tsx --env-file=.env ./src/index.ts",
     "dev": "yarn dev:compile",
     "stylize": "prettier . --write",
     "lint": "eslint ./src",
