@@ -16,3 +16,9 @@ logs/
 
 # Test Files
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# IDE Files
+.vscode/
+.idea/

@@ -3,6 +3,7 @@ import { logger } from "./tools/log";
 import { commandHandlers } from "./bot/commands/registry";
 import { db } from "./database";
 import { askCache } from "./ai";
+import { MessageFlags } from "discord.js";
 
 const AI_PREFIX = "!";
 
@@ -25,58 +26,61 @@ function getCommandListText() {
 // Start the application.
 logger.info("Starting the program...");
 
-// Start database.
-db.initiate();
+(async () => {
+  await db.initiate();
+  await db.setup();
 
-// Attempt to connect to the bot system, and close the connection after.
-getBotClient()
-  .then((client) => {
-    botLog.info("Bot is online. Waiting for commands...");
+  getBotClient()
+    .then((client) => {
+      botLog.info("Bot is online. Waiting for commands...");
 
-    client.on("interactionCreate", async (interaction) => {
-      if (!interaction.isChatInputCommand()) return;
+      client.on("interactionCreate", async (interaction) => {
+        if (!interaction.isChatInputCommand()) return;
 
-      const handler = commandHandlers.get(interaction.commandName);
-      if (!handler) return; // Command not found, ignore.
+        const handler = commandHandlers.get(interaction.commandName);
+        if (!handler) return;
 
-      try {
-        await handler(interaction);
-      } catch (err) {
-        botLog.error(
-          `Error executing command ${interaction.commandName}:`,
-          err as Error
-        );
-        await interaction.reply({
-          content: "There was an error while executing this command!",
-          ephemeral: true
-        });
-      }
+        try {
+          await handler(interaction);
+        } catch (err) {
+          botLog.error(
+            `Error executing command ${interaction.commandName}:`,
+            err as Error
+          );
+          await interaction.reply({
+            content: "There was an error while executing this command!",
+            flags: MessageFlags.Ephemeral
+          });
+        }
+      });
+
+      client.on("messageCreate", async (message) => {
+        if (message.author.bot) return;
+
+        const content = message.content.trim();
+        if (!content) return;
+
+        if (!content.startsWith(AI_PREFIX)) return;
+
+        const prompt = content.slice(AI_PREFIX.length).trim();
+        if (!prompt) {
+          await message.reply(getAiHelpText());
+          return;
+        }
+
+        try {
+          await message.channel.sendTyping();
+          const reply = await askCache(prompt);
+          await message.reply(reply);
+        } catch (err) {
+          botLog.error("Error during AI reply:", err as Error);
+          await message.reply(
+            "AI chat failed. Check your Gemini API key and try again."
+          );
+        }
+      });
+    })
+    .catch((err) => {
+      logger.error(String(err));
     });
-
-    client.on("messageCreate", async (message) => {
-      if (message.author.bot) return;
-
-      const content = message.content.trim();
-      if (!content) return;
-
-      if (!content.startsWith(AI_PREFIX)) return;
-
-      const prompt = content.slice(AI_PREFIX.length).trim();
-      if (!prompt) {
-        await message.reply(getAiHelpText());
-        return;
-      }
-
-      try {
-        await message.channel.sendTyping();
-        const reply = await askCache(prompt);
-        await message.reply(reply);
-      } catch (err) {
-        botLog.error("Error during AI reply:", err as Error);
-        await message.reply("AI chat failed. Check your Gemini API key and try again.");
-      }
-    });
-  })
-  .catch((err) => {
-    logger.error(String(err));
-  });
+})();

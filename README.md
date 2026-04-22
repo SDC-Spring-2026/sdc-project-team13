@@ -1,101 +1,124 @@
 # Cache
 
-![Project Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgithub.com%2FSDC-Fall-2025%2Fsdc-project-team13%2Fraw%2Fmain%2Fpackage.json&query=%24.version&prefix=v&style=flat-square&label=Version)
+![Project Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgithub.com%2FSDC-Spring-2026%2Fsdc-project-team13%2Fraw%2Fmain%2Fpackage.json&query=%24.version&prefix=v&style=flat-square&label=Version)
 
-**Cache** is a discord bot that helps with managing, leading, and contributing to SDC team projects.
-
-Using bot commands and natural language interaction, Cache can track progress, offer programming advice, create/manage projects and scheduling, and integrate with tools such as [Cal.com](https://cal.com) and [GitHub](https://github.com) for real-time activity monitoring.
+**Cache** is a Discord bot for SDC team projects. Members can create project groups, request to join them, list rosters, and query GitHub — from Discord. The bot also supports **AI chat** (messages starting with `!`) via Google Gemini, with project data stored in **SQLite** (local dev) or **PostgreSQL** (when `DATABASE_URL` is set).
 
 ## Contribute
 
-This project uses NodeJS LTS v22.20+ and Yarn 4 to manage dependencies. To download the repository and set up a local development environment, do the following:
+This project uses **Node.js LTS v22.20+** and **Yarn 4**.
 
 1. Clone the repository.
-2. Ensure you are using Node LTS v22.20 or greater.
-3. Run `corepack enable` to activate Yarn.
-4. In the repository, run `yarn` to install all dependencies.
-
-You're good to contribute!
+2. Run `corepack enable` (Windows: admin shell) and use Yarn 4.
+3. In the repository root, run `yarn install`.
 
 ## Quickstart
 
-1. Install
-   - Admin shell (Windows only): `corepack enable && corepack prepare yarn@4.10.3 --activate`
-   - Install deps: `yarn install`
-2. Create `.env` in the project root using `.env.example`, then fill in:
-   - `DISCORD_TOKEN=...`
-   - `CLIENT_ID=...`
-   - `GUILD_ID=...`
-   - `GEMINI_API_KEY=...` for AI chat with Google AI Studio
-   - `GITHUB_TOKEN=...` only if you want GitHub API features
-3. Invite the bot to your test server
-4. Register commands (guild/dev):
-   - `yarn register:dev`
-5. Run
-   - Bot dev (watch): `yarn dev:bot`
-   - Web dev (Next.js): `yarn dev:web`
-   - Both (recommended): `yarn dev`
-   - Prod: `yarn build && yarn start`
+1. **Install**
 
-## API Keys You Need
+   - Admin shell (Windows): `corepack enable && corepack prepare yarn@4.10.3 --activate`
+   - Install dependencies: `yarn install`
 
-- `DISCORD_TOKEN`: from the Discord Developer Portal for your bot.
-- `CLIENT_ID`: your Discord application ID.
-- `GUILD_ID`: the Discord server ID you want to register test slash commands into.
-- `GEMINI_API_KEY`: from [Google AI Studio](https://aistudio.google.com/app/apikey) if you want AI chat.
-- `GITHUB_TOKEN`: optional, only needed for GitHub integration.
+2. **Environment** — create a `.env` file at the project root:
 
-## How To Talk To Cache
+   ```env
+   # Discord
+   DISCORD_TOKEN=...
+   CLIENT_ID=...
+   GUILD_ID=...              # dev: guild slash commands
 
-Cache now supports two simple input styles:
+   # AI (! prefix) — optional
+   GEMINI_API_KEY=...
+   # GEMINI_MODEL=gemini-2.5-flash   # optional override
 
-- Hard commands with Discord slash commands such as `/hello`, `/create`, `/join`, and `/manage`
-- AI text mode with the `!` prefix
+   # GitHub (for /github commands)
+   GITHUB_TOKEN=...
 
-Examples:
+   # Database: omit to use local SQLite; set for PostgreSQL
+   # DATABASE_URL=postgresql://user:password@host:5432/dbname
+   ```
 
-- `/create`
-- `/join`
-- `/manage`
-- `!what can this bot do?`
-- `!write a short project standup template`
+3. **Invite the bot** to your test server (with **Message Content Intent** if you use `!` AI mode).
 
-Use `/` when you want deterministic hard commands.
-Use `!` when you want a natural-language AI response.
+4. **Database + register slash commands** (first run / after command changes):
 
-The AI mode is read-only for now. It can answer questions and help with wording or planning, but it does not directly change project data.
+   ```bash
+   yarn dev:setup
+   ```
 
-## Where To Store Bot Instructions
+   For quick guild command sync without full setup, you can also use: `yarn register:dev`
 
-Edit `src/botInstructions.ts`.
+5. **Run**
 
-That file is the main system-style instruction prompt for the `!` AI mode. If you want Cache to change its tone, scope, or response rules, that is the main place to do it.
+   - Bot (watch): `yarn dev:bot`
+   - Web (Next.js): `yarn dev:web` → [http://localhost:3000](http://localhost:3000)
+   - All (lint + bot + web): `yarn dev`
+   - Production: `yarn build && yarn start` (and `yarn build:web` / `yarn start:web` for the site)
 
-## Project Structure
-- `src/ai.ts`: minimal Gemini helper for `!` AI chat
-- `src/botInstructions.ts`: editable instructions for AI mode
-- `src/index.ts`: boot + event wiring
-- `src/bot/`: Discord client + command system
-  - `index.ts`: creates/logs in the Discord client
-  - `commands/`: command files (definition + handler)
-    - `hello.ts`: example command
-    - `random.ts`: random number command
-    - `registry.ts`: single source of truth for definitions/handlers
-  - `registerCommands.ts`: registers slash commands (guild/global)
-- `src/tools/log.ts`: Winston logging
-- `src/database/`: placeholder for persistence
-- `apps/web/`: Next.js frontend (separate from the bot)
+## How to use Cache
+
+- **Slash commands** such as `/create`, `/join`, `/group`, `/github` — see table below.
+- **AI text mode** — prefix a message with `!` in a channel the bot can read, e.g. `!what can this bot do?`  
+  This is read-only: it does not change project data; use `/` commands for real actions.
+
+### Bot instructions (AI tone and rules)
+
+Edit `src/botInstructions.ts` to change the system-style instructions for `!` mode.
 
 ## Commands
-- Add: create `src/bot/commands/<name>.ts` exporting `<name>Command` and `handle<Name>`. Import into `registry.ts`, add to `commandDefinitions` and `commandHandlers`. Re-run `yarn register:dev`.
-- Update: change the command definition; re-run `yarn register:dev`.
-- Remove: remove from `registry.ts` and re-run `yarn register:dev` (Discord will delete it from the guild).
-- Global vs Guild:
-  - Dev: `Routes.applicationGuildCommands(clientId, guildId)` (fast).
-  - Prod: `Routes.applicationCommands(clientId)` (slow propagation).
+
+| Command | Description |
+|--------|-------------|
+| `/create <project> <description>` | Create a new project group with a dedicated role and channel. You become the leader. |
+| `/join <name>` | Send a join request to a group. The group channel gets an accept/decline button (valid 3 days). |
+| `/kick <group> <person>` | Remove a member (leader only). |
+| `/group <name>` | List members of a group. |
+| `/manage <project> <description>` | Update project description and channel topic. |
+| `/github repo <target>` | Repo info (stars, forks, language, latest commit). |
+| `/github commits <target> [branch] [limit]` | Recent commits (1–20, default 5). |
+| `/flipcoin` | Flip a coin. |
+| `/random` | Random value. |
+| `/hello` | Say hello. |
+
+## Project structure
+
+```
+src/
+  index.ts              # Entry: DB, Discord, slash + ! AI
+  setup.ts              # DB migration/close + dev guild command registration
+  ai.ts                 # Gemini helper for ! chat
+  botInstructions.ts    # AI system instructions
+  bot/
+    index.ts            # Discord client
+    registerCommands.ts # Optional: register guild commands only
+    commands/           # Slash commands; registry.ts maps names → handlers
+  database/             # Drivers (SQLite/Postgres), defs, impl
+  integrations/         # GitHub (Octokit)
+  tools/                # Logging, slugs
+apps/web/               # Next.js frontend (separate from the bot)
+```
+
+## Adding a command
+
+1. Add `src/bot/commands/<name>.ts` with `<name>Command` and `handle<Name>`.
+2. Register in `src/bot/commands/registry.ts`.
+3. Run `yarn dev:setup` (or `yarn register:dev` for commands only, after DB is ready once).
 
 ## Troubleshooting
-- `.env` not loading: ensure `package.json` uses `--env-file=.env` or add `import "dotenv/config"` in scripts.
-- Commands not showing: re-run `yarn register:dev`, confirm `GUILD_ID`, ensure bot is in the guild.
-- Bot not replying: check the event handlers and make sure the bot can read and send messages in the channel.
-- `!` AI mode not replying: confirm `GEMINI_API_KEY` is set in `.env`.
+
+| Problem | Fix |
+|--------|-----|
+| Commands not showing | `yarn dev:setup` or `yarn register:dev`; check `GUILD_ID`; bot in guild. |
+| DB errors on first run | Run `yarn dev:setup` once. |
+| `!` AI not replying | Set `GEMINI_API_KEY`; enable **Message Content Intent**; bot can read/send in channel. |
+| `.env` not loading | Scripts use `--env-file=.env` in `package.json`. |
+
+## Tech stack
+
+Discord.js v14 · TypeScript · **better-sqlite3** (dev) / **PostgreSQL** (prod) · **@google/genai** (AI) · Next.js (web) · Octokit · Winston · Yarn 4
+
+## Contributing
+
+Bugs and features: [GitHub Issues](https://github.com/SDC-Spring-2026/sdc-project-team13/issues)
+
+**SDC Spring 2026 — Team 13** · Connor Furby · Cash Pergande · Gavin Smith

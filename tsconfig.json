@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "module": "commonjs",
     "moduleResolution": "node",
     "rootDir": "src",
@@ -9,11 +9,10 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "sourceMap": false,
-    "declaration": false,
+    "sourceMap": true,
     "resolveJsonModule": true,
-    "noImplicitAny": true,
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
