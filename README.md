@@ -32,7 +32,9 @@ You're good to contribute!
 4. Register commands (guild/dev):
    - `yarn register:dev`
 5. Run
-   - Dev: `yarn dev`
+   - Bot dev (watch): `yarn dev:bot`
+   - Web dev (Next.js): `yarn dev:web`
+   - Both (recommended): `yarn dev`
    - Prod: `yarn build && yarn start`
 
 ## API Keys You Need
@@ -82,6 +84,7 @@ That file is the main system-style instruction prompt for the `!` AI mode. If yo
   - `registerCommands.ts`: registers slash commands (guild/global)
 - `src/tools/log.ts`: Winston logging
 - `src/database/`: placeholder for persistence
+- `apps/web/`: Next.js frontend (separate from the bot)
 
 ## Commands
 - Add: create `src/bot/commands/<name>.ts` exporting `<name>Command` and `handle<Name>`. Import into `registry.ts`, add to `commandDefinitions` and `commandHandlers`. Re-run `yarn register:dev`.

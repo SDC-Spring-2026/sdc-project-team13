@@ -1,0 +1,5 @@
+{
+  "name": "cache-web",
+  "private": true,
+  "type": "module"
+}
