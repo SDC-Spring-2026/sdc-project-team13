@@ -22,6 +22,12 @@ export const createCommand = {
               name: "description",
               description: "project description",
               required: true
+          },
+          {
+              type: 3, // STRING TYPE
+              name: "github",
+              description: "your GitHub username (only needed the first time)",
+              required: false
           }
         ]
 };
@@ -30,6 +36,7 @@ export const createCommand = {
 export async function handleCreate(interaction: ChatInputCommandInteraction) {
     const project = interaction.options.getString("project", true);
     const description = interaction.options.getString("description", true);
+    const github = interaction.options.getString("github") ?? undefined;
 
     const guild = interaction.guild;
     if (!guild) {
@@ -77,6 +84,12 @@ export async function handleCreate(interaction: ChatInputCommandInteraction) {
             interaction.user.id
         );
         await db.createNewProject(project, teamSlug);
+
+        const existingMember = await db.getMember(interaction.user.id);
+        if (!existingMember) {
+            await db.registerMember(interaction.user.id, github);
+            logger.info(`Registered new member ${interaction.user.tag} (github: ${github ?? "none"})`);
+        }
 
         logger.info(`Project "${project}" created by ${interaction.user.tag} (team: ${teamSlug}, channel: ${channel.id}, role: ${role.id})`);
         await interaction.editReply(

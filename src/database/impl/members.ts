@@ -1,8 +1,16 @@
-import { DatabaseMembersManager } from "../defs/members";
+import { DatabaseMembersManager, Member } from "../defs/members";
 import { Teams } from "../defs/teams";
 import { driver } from "../driver";
 
 export const db_members: DatabaseMembersManager = {
+  async getMember(discord) {
+    const rows = await driver().query<Member>(
+      "SELECT * FROM Members WHERE discord = ?",
+      [discord]
+    );
+    return rows[0] ?? null;
+  },
+
   async getMemberTeams(discord, inactives) {
     const assocs = await driver().query<{ team_slug: string }>(
       "SELECT team_slug FROM TeamAssociations WHERE user_id = ?",
