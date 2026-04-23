@@ -6,13 +6,18 @@ import {
 import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
 import { TeamPermissionLevel } from "../../database/defs/team_assoc";
+import { createNewLogger } from "../../tools/log";
+import { requireRegistered } from "./requireRegistered";
+import { removeRepoCollaborator } from "../../integrations/githubApp";
+
+const logger = createNewLogger("cmd:kick");
 
 /**
  * /kick — removes a member from a team in the database and removes their Discord role (leader only).
  */
 export const kickCommand = {
   name: "kick",
-  description: "Kicks a specified member",
+  description: "Removes a member from your team",
   options: [
     {
       type: 3,
@@ -87,13 +92,16 @@ export async function handleKick(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  const formattedGroup = group.toLowerCase().replace(/\s+/g, "-");
+  if (!(await requireRegistered(interaction))) return;
 
-  await interaction.deferReply();
+  const formattedGroup = group.toLowerCase().replace(/\s+/g, "-");
 
   const teamSlug = await resolveTeamSlug(guild, formattedGroup);
   if (!teamSlug) {
-    await interaction.editReply(`No group called **${group}** found.`);
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: `No group called **${group}** found.`
+    });
     return;
   }
 
@@ -102,55 +110,89 @@ export async function handleKick(interaction: ChatInputCommandInteraction) {
     interaction.user.id
   );
   if (callerPerm !== TeamPermissionLevel.LEADER) {
-    await interaction.editReply(
-      "Only a **team leader** can remove members from this group."
-    );
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "Only the team leader can kick members."
+    });
     return;
   }
 
   const target = await findTargetMember(guild, person);
   if (!target) {
-    await interaction.editReply(
-      `Could not find a member matching **${person}**. Try a @mention or their Discord username.`
-    );
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: `Could not find a member matching **${person}**. Try a @mention or their Discord username.`
+    });
     return;
   }
 
   if (target.id === interaction.user.id) {
-    await interaction.editReply("You cannot kick yourself with this command.");
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "You cannot kick yourself with this command."
+    });
     return;
   }
 
   const targetPerm = await db.getMemberTeamPermission(teamSlug, target.id);
   if (targetPerm === null) {
-    await interaction.editReply(
-      `**${target.displayName}** is not on team **${group}** in the database.`
-    );
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: `**${target.displayName}** is not on team **${group}** in the database.`
+    });
     return;
   }
 
   if (targetPerm === TeamPermissionLevel.LEADER) {
-    await interaction.editReply(
-      "You cannot remove another **leader** from the team. Demote them first or use server admin tools."
-    );
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content:
+        "You cannot remove another **leader** from the team. Demote them first or use server admin tools."
+    });
     return;
   }
+
+  await interaction.deferReply();
 
   try {
     await db.removeMemberFromTeam(teamSlug, target.id);
 
-    const role = guild.roles.cache.find((r) => r.name === formattedGroup);
+    const role = guild.roles.cache.find((r) => r.name === teamSlug);
     if (role && target.roles.cache.has(role.id)) {
-      await target.roles.remove(role, `Kicked from team ${group} by ${interaction.user.tag}`);
+      await target.roles.remove(
+        role,
+        `Kicked from team ${group} by ${interaction.user.tag}`
+      );
     }
 
+    // Revoke GitHub repo access — best-effort
+    const [kickedMember, team] = await Promise.all([
+      db.getMember(target.id),
+      db.getTeam(teamSlug)
+    ]);
+    if (kickedMember?.github && team?.github_repo) {
+      await removeRepoCollaborator(
+        team.github_repo,
+        kickedMember.github
+      ).catch((e) =>
+        logger.error(
+          `Failed to remove GitHub collaborator for ${target.user.tag}: ${e instanceof Error ? e.message : String(e)}`
+        )
+      );
+    }
+
+    logger.info(
+      `${target.user.tag} kicked from "${group}" (team: ${teamSlug}) by ${interaction.user.tag}`
+    );
     await interaction.editReply(
-      `Removed **${target.displayName}** from **${group}** (database + role).`
+      `✅ **${target.displayName}** has been removed from **${group}**.`
     );
   } catch (err) {
-    console.error(err);
+    logger.error(
+      `Failed to kick ${target.user.tag} from "${group}": ${err instanceof Error ? err.message : String(err)}`
+    );
     await interaction.editReply(
-      "Failed to remove that member from the team. Check bot permissions (Manage Roles) and try again."
+      `Failed to remove **${target.displayName}** from **${group}**.`
     );
   }
 }

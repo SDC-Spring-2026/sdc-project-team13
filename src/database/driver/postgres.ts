@@ -95,6 +95,9 @@ export const postgresDriver: Driver = {
     await pool.query(
       `ALTER TABLE ${T} ADD COLUMN IF NOT EXISTS channel_id TEXT`
     );
+    await pool.query(
+      `ALTER TABLE ${T} ADD COLUMN IF NOT EXISTS github_repo TEXT`
+    );
 
     logger.verbose("Tables ready.");
   },

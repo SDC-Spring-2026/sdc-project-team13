@@ -13,6 +13,7 @@
     "dev:bot": "tsx --watch --env-file=.env ./src/index.ts",
     "dev:web": "next dev ./apps/web",
     "dev:compile": "tsx --watch --env-file=.env ./src/index.ts",
+    "dev:compile:no-watch": "tsx --env-file=.env ./src/index.ts",
     "dev": "concurrently -c green,blue,magenta -n ESLint,BOT,WEB \"yarn dev:lint\" \"yarn dev:bot\" \"yarn dev:web\"",
     "stylize": "prettier . --write",
     "lint": "eslint ./src ./apps/web",

@@ -1,9 +1,18 @@
-import { DatabaseMembersManager } from "../defs/members";
+import { DatabaseMembersManager, Member } from "../defs/members";
 import { Teams } from "../defs/teams";
 import { driver } from "../driver";
 import { tbl } from "../physicalTables";
 
 export const db_members: DatabaseMembersManager = {
+  async getMember(discord) {
+    const M = tbl("members");
+    const rows = await driver().query<Member>(
+      `SELECT * FROM ${M} WHERE discord = ?`,
+      [discord]
+    );
+    return rows[0] ?? null;
+  },
+
   async getMemberTeams(discord, inactives) {
     const A = tbl("teamAssociations");
     const T = tbl("teams");

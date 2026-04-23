@@ -1,6 +1,10 @@
 import { ChatInputCommandInteraction } from "discord.js";
 import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
+import { createNewLogger } from "../../tools/log";
+import { requireRegistered } from "./requireRegistered";
+
+const logger = createNewLogger("cmd:group");
 
 /**
  * /group — lists the members of a group.
@@ -29,6 +33,8 @@ export async function handleGroup(interaction: ChatInputCommandInteraction) {
         return;
     }
 
+    if (!await requireRegistered(interaction)) return;
+
     await interaction.deferReply();
 
     try {
@@ -47,7 +53,7 @@ export async function handleGroup(interaction: ChatInputCommandInteraction) {
         const memberList = members.map(m => `<@${m.discord}>`).join('\n');
         await interaction.editReply(`**Members of ${name}:**\n${memberList}`);
     } catch (err) {
-        console.error(err);
+        logger.error(`Failed to list members of "${name}" for ${interaction.user.tag}: ${err instanceof Error ? err.message : String(err)}`);
         await interaction.editReply("Could not find that group.");
     }
 }

@@ -1,6 +1,7 @@
 
 import { helloCommand, handleHello } from "./hello";
 import { randomCommand, handleRandom } from "./random";
+import { registerCommand, handleRegister } from "./register";
 import { createCommand, handleCreate } from "./create";
 import { groupCommand, handleGroup } from "./group";
 import { joinCommand, handleJoin } from "./join";
@@ -14,10 +15,11 @@ import { githubCommand, handleGithub } from "./github";
  * - commandDefinitions: used by registerCommands.ts to sync with Discord
  * - commandHandlers: used at runtime to route interactions by name
  */
-export const commandDefinitions = [helloCommand, randomCommand, createCommand, groupCommand, joinCommand, kickCommand, manageCommand, flipCoinCommand, githubCommand];
+export const commandDefinitions = [helloCommand, randomCommand, registerCommand, createCommand, groupCommand, joinCommand, kickCommand, manageCommand, flipCoinCommand, githubCommand];
 export const commandHandlers = new Map([
     [helloCommand.name, handleHello],
     [randomCommand.name, handleRandom],
+    [registerCommand.name, handleRegister],
     [createCommand.name, handleCreate],
     [groupCommand.name, handleGroup],
     [joinCommand.name, handleJoin],

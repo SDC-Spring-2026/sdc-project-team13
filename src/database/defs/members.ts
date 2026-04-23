@@ -11,6 +11,11 @@ export interface DatabaseMembersManager {
   // MEMBERS
 
   /**
+   * Gets a single member record by discord ID, or null if not registered.
+   * @param discord_id Their discord user id.
+   */
+  getMember(discord_id: string): Promise<Member | null>;
+  /**
    * Gets all active teams that a member is associated with.
    * @param discord_id Their discord user id.
    * @param include_inactive If this list should include teams that are now inactive.

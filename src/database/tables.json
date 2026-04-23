@@ -24,7 +24,8 @@
       },
       { "name": "role_id", "type": "TEXT" },
       { "name": "channel_id", "type": "TEXT" },
-      { "name": "is_active", "type": "BOOLEAN", "opts": { "not_null": true } }
+      { "name": "is_active", "type": "BOOLEAN", "opts": { "not_null": true } },
+      { "name": "github_repo", "type": "TEXT" }
     ]
   },
   {

@@ -6,6 +6,21 @@ import { driver } from "../driver";
 import { tbl } from "../physicalTables";
 
 export const db_teams: DatabaseTeamsManager = {
+  async getTeam(team_slug) {
+    const rows = await driver().query<Teams>(
+      "SELECT * FROM Teams WHERE slug = ?",
+      [team_slug]
+    );
+    return rows[0] ?? null;
+  },
+
+  async setTeamRepo(team_slug, repo_name) {
+    await driver().query(
+      "UPDATE Teams SET github_repo = ? WHERE slug = ?",
+      [repo_name, team_slug]
+    );
+  },
+
   async getNumberOfTeams(term) {
     const T = tbl("teams");
     let sql = `SELECT COUNT(*) AS count FROM ${T}`;
