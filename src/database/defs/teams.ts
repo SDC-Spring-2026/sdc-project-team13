@@ -6,12 +6,25 @@ export interface Teams {
   role_id: string;
   channel_id: string;
   is_active: boolean;
+  github_repo: string | null;
 }
 
 /** Database Manager parts for Teams table. */
 export interface DatabaseTeamsManager {
   // TEAMS
 
+  /**
+   * Get a single team record by slug.
+   * @param team_slug The team slug id.
+   * @returns The team record, or null if not found.
+   */
+  getTeam(team_slug: string): Promise<Teams | null>;
+  /**
+   * Store the GitHub repo name for a team.
+   * @param team_slug The team slug id.
+   * @param repo_name The GitHub repository name.
+   */
+  setTeamRepo(team_slug: string, repo_name: string): Promise<void>;
   /**
    * Gets the number of teams in SDC, optionally from any specific term.
    * @param term Optional, the term to count.

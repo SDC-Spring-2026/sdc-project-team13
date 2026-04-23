@@ -1,10 +1,25 @@
-import { DatabaseTeamsManager } from "../defs/teams";
+import { DatabaseTeamsManager, Teams } from "../defs/teams";
 import { Project } from "../defs/projects";
 import { TeamPermissionLevel } from "../defs/team_assoc";
 import { generateTermSlug, generateTeamSlug } from "../../tools/slug";
 import { driver } from "../driver";
 
 export const db_teams: DatabaseTeamsManager = {
+  async getTeam(team_slug) {
+    const rows = await driver().query<Teams>(
+      "SELECT * FROM Teams WHERE slug = ?",
+      [team_slug]
+    );
+    return rows[0] ?? null;
+  },
+
+  async setTeamRepo(team_slug, repo_name) {
+    await driver().query(
+      "UPDATE Teams SET github_repo = ? WHERE slug = ?",
+      [repo_name, team_slug]
+    );
+  },
+
   async getNumberOfTeams(term) {
     let sql = "SELECT COUNT(*) AS count FROM Teams";
     const params: unknown[] = [];

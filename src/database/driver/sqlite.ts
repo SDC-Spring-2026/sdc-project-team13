@@ -71,6 +71,12 @@ export const sqliteDriver: Driver = {
       )
     `).run();
 
+    try {
+      sql.prepare("ALTER TABLE Teams ADD COLUMN github_repo TEXT").run();
+    } catch {
+      // Column already exists — safe to ignore
+    }
+
     sql.prepare(`
       CREATE TABLE IF NOT EXISTS MessageHistory (
         id        INTEGER PRIMARY KEY AUTOINCREMENT,

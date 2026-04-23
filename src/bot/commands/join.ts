@@ -9,6 +9,7 @@ import { resolveTeamSlug } from "./resolveTeam";
 import { TeamPermissionLevel } from "../../database/defs/team_assoc";
 import { createNewLogger } from "../../tools/log";
 import { requireRegistered } from "./requireRegistered";
+import { addRepoCollaborator } from "../../integrations/githubApp";
 
 const logger = createNewLogger("cmd:join");
 
@@ -98,10 +99,22 @@ export async function handleJoin(interaction: ChatInputCommandInteraction) {
             try {
                 await db.addMemberToTeam(teamSlug, interaction.user.id, TeamPermissionLevel.MEMBER);
 
-                const role = guild.roles.cache.find(r => r.name === formattedName);
+                // Channel and role are named after the team slug
+                const role = guild.roles.cache.find(r => r.name === teamSlug);
                 if (role) {
                     const member = await guild.members.fetch(interaction.user.id);
                     await member.roles.add(role);
+                }
+
+                // Grant GitHub repo access — best-effort
+                const [joiningMember, team] = await Promise.all([
+                    db.getMember(interaction.user.id),
+                    db.getTeam(teamSlug)
+                ]);
+                if (joiningMember?.github && team?.github_repo) {
+                    await addRepoCollaborator(team.github_repo, joiningMember.github).catch((e) =>
+                        logger.error(`Failed to add GitHub collaborator for ${interaction.user.tag}: ${e instanceof Error ? e.message : String(e)}`)
+                    );
                 }
 
                 logger.info(`${interaction.user.tag} accepted into "${name}" (team: ${teamSlug}) by ${buttonInteraction.user.tag}`);

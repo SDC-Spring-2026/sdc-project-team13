@@ -72,6 +72,10 @@ export const postgresDriver: Driver = {
     `);
 
     await pool.query(`
+      ALTER TABLE Teams ADD COLUMN IF NOT EXISTS github_repo TEXT
+    `);
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS MessageHistory (
         id        SERIAL PRIMARY KEY,
         team_slug TEXT,

@@ -21,8 +21,12 @@ function createRotatingFileTransport(name: string, level: string) {
 }
 
 // The full log file and issue log file.
+// setMaxListeners(0) disables the warning — these transports are intentionally
+// shared across many loggers, each of which adds its own event listeners.
 const fullLogFile = createRotatingFileTransport("full", "verbose");
 const issueLogFile = createRotatingFileTransport("issues", "warning");
+fullLogFile.setMaxListeners(0);
+issueLogFile.setMaxListeners(0);
 
 /**
  * Creates a new named logger.

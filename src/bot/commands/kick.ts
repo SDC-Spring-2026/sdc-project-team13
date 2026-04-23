@@ -3,6 +3,7 @@ import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
 import { createNewLogger } from "../../tools/log";
 import { requireRegistered } from "./requireRegistered";
+import { removeRepoCollaborator } from "../../integrations/githubApp";
 
 const logger = createNewLogger("cmd:kick");
 
@@ -63,10 +64,22 @@ export async function handleKick(interaction: ChatInputCommandInteraction) {
     try {
         await db.removeMemberFromTeam(teamSlug, target.id);
 
-        const role = guild.roles.cache.find(r => r.name === formattedGroup);
+        // Channel and role are named after the team slug
+        const role = guild.roles.cache.find(r => r.name === teamSlug);
         if (role) {
             const member = await guild.members.fetch(target.id);
             await member.roles.remove(role);
+        }
+
+        // Revoke GitHub repo access — best-effort
+        const [kickedMember, team] = await Promise.all([
+            db.getMember(target.id),
+            db.getTeam(teamSlug)
+        ]);
+        if (kickedMember?.github && team?.github_repo) {
+            await removeRepoCollaborator(team.github_repo, kickedMember.github).catch((e) =>
+                logger.error(`Failed to remove GitHub collaborator for ${target.tag}: ${e instanceof Error ? e.message : String(e)}`)
+            );
         }
 
         logger.info(`${target.tag} kicked from "${group}" (team: ${teamSlug}) by ${interaction.user.tag}`);
