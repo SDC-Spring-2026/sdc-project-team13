@@ -45,18 +45,26 @@ export async function handleManage(interaction: ChatInputCommandInteraction) {
             return;
         }
 
-        // Find the project associated with this team
-        const existing = await db.getProjectByName(formattedProject);
+        // Project display name often differs from the channel slug (e.g. "Trillion" vs trillion).
+        const existing =
+            (await db.getProjectByName(project.trim())) ??
+            (await db.getProjectByName(formattedProject)) ??
+            (await db.getPrimaryActiveProjectForTeam(teamSlug));
+
         if (!existing) {
-            await interaction.editReply(`No project found named **${project}**.`);
+            await interaction.editReply(
+                `No project row found for team **${teamSlug}**. Create one with /create first.`
+            );
             return;
         }
 
-        await db.changeProjectDisplayName(existing.slug, description);
-
-        // Update the channel topic
-        const channel = guild.channels.cache.find(c => c.name === formattedProject);
-        if (channel && channel.isTextBased() && 'setTopic' in channel) {
+        const targetCompact = formattedProject.replace(/\s+/g, "").toLowerCase();
+        const channel = guild.channels.cache.find(
+            (c) =>
+                c.isTextBased() &&
+                c.name.replace(/\s+/g, "").toLowerCase() === targetCompact
+        );
+        if (channel && channel.isTextBased() && "setTopic" in channel) {
             await channel.setTopic(description);
         }
 

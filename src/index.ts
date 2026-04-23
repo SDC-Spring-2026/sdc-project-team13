@@ -3,9 +3,25 @@ import { logger } from "./tools/log";
 import { commandHandlers } from "./bot/commands/registry";
 import { db } from "./database";
 import { askCache } from "./ai";
+import { buildAiSessionContext } from "./ai/messageContext";
+import {
+  recordAiAssistantReply,
+  recordUserChannelMessage
+} from "./bot/recordTeamMessages";
 import { MessageFlags } from "discord.js";
 
 const AI_PREFIX = "!";
+
+/** `!` at start, or after whitespace (e.g. "intro text !question"). */
+function extractAiPrompt(raw: string): string | null {
+  const t = raw.trim();
+  for (let k = 0; k < t.length; k++) {
+    if (t[k] !== AI_PREFIX) continue;
+    if (k > 0 && !/\s/.test(t[k - 1] ?? " ")) continue;
+    return t.slice(k + AI_PREFIX.length).trim();
+  }
+  return null;
+}
 
 function getAiHelpText() {
   return [
@@ -57,12 +73,18 @@ logger.info("Starting the program...");
       client.on("messageCreate", async (message) => {
         if (message.author.bot) return;
 
-        const content = message.content.trim();
+        const content = message.content?.trim() ?? "";
+        if (content) {
+          void recordUserChannelMessage(message).catch((err) =>
+            botLog.warn("MessageHistory archive failed:", err as Error)
+          );
+        }
+
         if (!content) return;
 
-        if (!content.startsWith(AI_PREFIX)) return;
+        const prompt = extractAiPrompt(content);
+        if (prompt === null) return;
 
-        const prompt = content.slice(AI_PREFIX.length).trim();
         if (!prompt) {
           await message.reply(getAiHelpText());
           return;
@@ -70,8 +92,12 @@ logger.info("Starting the program...");
 
         try {
           await message.channel.sendTyping();
-          const reply = await askCache(prompt);
+          const sessionContext = await buildAiSessionContext(message);
+          const reply = await askCache(prompt, { sessionContext });
           await message.reply(reply);
+          void recordAiAssistantReply(message, reply).catch((err) =>
+            botLog.warn("MessageHistory AI reply archive failed:", err as Error)
+          );
         } catch (err) {
           botLog.error("Error during AI reply:", err as Error);
           await message.reply(

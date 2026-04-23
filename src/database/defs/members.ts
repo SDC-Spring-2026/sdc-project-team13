@@ -55,4 +55,8 @@ export interface DatabaseMembersManager {
    * @returns If the user was successfully removed from the database.
    */
   unregisterMember(discord_id: string): Promise<void>;
+  /**
+   * GitHub username linked to this Discord account in the Members table, if any.
+   */
+  getMemberGithub(discord_id: string): Promise<string | null>;
 }

@@ -19,16 +19,30 @@ function getAiClient(): GoogleGenAI | null {
   return ai;
 }
 
-export async function askCache(prompt: string): Promise<string> {
+export async function askCache(
+  prompt: string,
+  options?: { sessionContext?: string }
+): Promise<string> {
   const client = getAiClient();
 
   if (!client) {
     return "AI chat is not configured yet. Add `GEMINI_API_KEY` to your `.env` file.";
   }
 
+  const ctx = options?.sessionContext?.trim();
+  const contents = ctx
+    ? [
+        "Session context (from this Discord server and Cache database only; treat as facts for this turn):",
+        ctx,
+        "",
+        "User message:",
+        prompt
+      ].join("\n")
+    : prompt;
+
   const response = await client.models.generateContent({
     model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
-    contents: prompt,
+    contents,
     config: {
       systemInstruction: CACHE_BOT_INSTRUCTIONS
     }

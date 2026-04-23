@@ -17,6 +17,9 @@ export default function HomePage() {
         <li>
           Both: <code>yarn dev</code>
         </li>
+        <li>
+          <a href="/db-inspector">DB inspector</a> (dev: read-only tables for debugging)
+        </li>
       </ul>
     </main>
   );

@@ -1,5 +1,12 @@
 {
   "name": "cache-web",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "better-sqlite3": "^12.8.0",
+    "next": "^16.2.4",
+    "pg": "^8.20.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  }
 }

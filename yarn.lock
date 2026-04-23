@@ -1855,6 +1855,12 @@ __metadata:
 "cache-web@workspace:apps/web":
   version: 0.0.0-use.local
   resolution: "cache-web@workspace:apps/web"
+  dependencies:
+    better-sqlite3: "npm:^12.8.0"
+    next: "npm:^16.2.4"
+    pg: "npm:^8.20.0"
+    react: "npm:^19.2.5"
+    react-dom: "npm:^19.2.5"
   languageName: unknown
   linkType: soft
 
