@@ -24,6 +24,10 @@ export interface DatabaseMessagesManager {
    */
   getAllTeamMessages(team_slug: string): Promise<Message[]>;
   /**
+   * Latest messages for a team (by row id), newest first in the returned array.
+   */
+  getRecentTeamMessages(team_slug: string, limit: number): Promise<Message[]>;
+  /**
    * Get all messages from a user.
    * @param user_id The discord user id.
    * @returns A list of all messages from that user.

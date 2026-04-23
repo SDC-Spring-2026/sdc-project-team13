@@ -62,4 +62,10 @@ export interface DatabaseProjectManager {
    * @returns The matching project, or undefined.
    */
   getProjectByName(name: string): Promise<Project | undefined>;
+  /**
+   * One active project for a team (first match), when display name lookup is unreliable.
+   */
+  getPrimaryActiveProjectForTeam(
+    team_slug: string
+  ): Promise<Project | undefined>;
 }

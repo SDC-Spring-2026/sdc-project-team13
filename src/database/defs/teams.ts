@@ -38,6 +38,24 @@ export interface DatabaseTeamsManager {
    */
   getTeamProjects(team_slug: string): Promise<Project[]>;
   /**
+   * Look up a team by its linked Discord text channel id.
+   * @param channel_id The Discord channel snowflake.
+   * @returns The team row if this channel is a project team channel, else undefined.
+   */
+  getTeamByChannelId(channel_id: string): Promise<Teams | undefined>;
+  /**
+   * Load a team row by slug.
+   */
+  getTeamBySlug(team_slug: string): Promise<Teams | undefined>;
+  /**
+   * Find an active team whose active project display name normalizes to the same
+   * compact string as a Discord channel name (spaces/hyphens stripped, lowercased).
+   * Use when channel_id is stale or project title differs from the channel slug.
+   */
+  findActiveTeamByProjectNameCompact(
+    compactHint: string
+  ): Promise<Teams | undefined>;
+  /**
    * Reserves a new team slug from SDC, and creates an unactivated team.
    * @returns The slug id for this team. Will be in the form `term-team#`. Team ID will count up from the first team create this term. Needed to finalize team registration.
    */
