@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { dbLogger as logger } from "..";
 import { alreadyClosedError, alreadyOpenError, noOpWhileClosedError } from "../errors";
+import { tbl } from "../physicalTables";
 import { Driver } from ".";
 
 let pool: Pool;
@@ -37,15 +38,21 @@ export const postgresDriver: Driver = {
     if (!ready) throw noOpWhileClosedError();
     logger.verbose("Creating tables if they dont exist...");
 
+    const M = tbl("members");
+    const T = tbl("teams");
+    const A = tbl("teamAssociations");
+    const P = tbl("projects");
+    const H = tbl("messageHistory");
+
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS Members (
+      CREATE TABLE IF NOT EXISTS ${M} (
         discord TEXT PRIMARY KEY NOT NULL,
         github  TEXT UNIQUE
       )
     `);
 
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS Teams (
+      CREATE TABLE IF NOT EXISTS ${T} (
         slug       TEXT    PRIMARY KEY NOT NULL,
         role_id    TEXT,
         channel_id TEXT,
@@ -54,7 +61,7 @@ export const postgresDriver: Driver = {
     `);
 
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS TeamAssociations (
+      CREATE TABLE IF NOT EXISTS ${A} (
         id         SERIAL  PRIMARY KEY,
         user_id    TEXT    NOT NULL,
         team_slug  TEXT    NOT NULL,
@@ -63,7 +70,7 @@ export const postgresDriver: Driver = {
     `);
 
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS Projects (
+      CREATE TABLE IF NOT EXISTS ${P} (
         slug      TEXT    PRIMARY KEY NOT NULL,
         name      TEXT    NOT NULL,
         team_slug TEXT    NOT NULL,
@@ -72,7 +79,7 @@ export const postgresDriver: Driver = {
     `);
 
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS MessageHistory (
+      CREATE TABLE IF NOT EXISTS ${H} (
         id        SERIAL PRIMARY KEY,
         team_slug TEXT,
         user_id   TEXT,
@@ -81,6 +88,13 @@ export const postgresDriver: Driver = {
         content   TEXT
       )
     `);
+
+    await pool.query(
+      `ALTER TABLE ${T} ADD COLUMN IF NOT EXISTS role_id TEXT`
+    );
+    await pool.query(
+      `ALTER TABLE ${T} ADD COLUMN IF NOT EXISTS channel_id TEXT`
+    );
 
     logger.verbose("Tables ready.");
   },

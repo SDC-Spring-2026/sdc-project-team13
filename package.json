@@ -5,16 +5,25 @@
   "main": "./dist/index.js",
   "type": "commonjs",
   "packageManager": "yarn@4.10.3",
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
+    "dev:lint": "esw --watch ./src ./apps/web",
+    "dev:bot": "tsx --watch --env-file=.env ./src/index.ts",
+    "dev:web": "next dev ./apps/web",
     "dev:compile": "tsx --watch --env-file=.env ./src/index.ts",
-    "dev": "yarn dev:compile",
+    "dev": "concurrently -c green,blue,magenta -n ESLint,BOT,WEB \"yarn dev:lint\" \"yarn dev:bot\" \"yarn dev:web\"",
     "stylize": "prettier . --write",
-    "lint": "eslint ./src",
+    "lint": "eslint ./src ./apps/web",
     "compile": "tsc",
-    "build": "yarn lint; yarn compile",
+    "build:web": "next build ./apps/web",
+    "build": "yarn lint && yarn compile && yarn build:web",
     "start": "node --env-file=.env ./dist/index.js",
+    "start:web": "next start ./apps/web",
     "dev:setup": "tsx --env-file=.env ./src/setup.ts",
-    "setup": "node --env-file-.env ./dist/setup.js"
+    "setup": "node --env-file=.env ./dist/setup.js",
+    "register:dev": "tsx --env-file=.env ./src/bot/registerCommands.ts"
   },
   "repository": {
     "type": "git",
@@ -57,6 +66,8 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.9.1",
     "@types/pg": "^8.20.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "better-sqlite3": "^12.8.0",
     "concurrently": "^9.2.1",
     "eslint": "^9.38.0",
@@ -69,10 +80,14 @@
     "typescript-eslint": "^8.46.2"
   },
   "dependencies": {
+    "@google/genai": "^1.46.0",
     "@octokit/rest": "^22.0.1",
     "discord.js": "^14.23.2",
+    "next": "^16.2.4",
     "octokit": "^5.0.4",
     "pg": "^8.20.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0"
   }

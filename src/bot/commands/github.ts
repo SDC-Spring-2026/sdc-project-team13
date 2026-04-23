@@ -1,4 +1,3 @@
-import type { ChatInputCommandInteraction } from "discord.js";
 import { ChatInputCommandInteraction, EmbedBuilder } from "discord.js";
 import { getOctokit } from "../../integrations/github";
 
@@ -151,7 +150,12 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
       const { data: repoData } = await octo.repos.get({ owner, repo });
 
       // commits array - has the list of commits
-      const { data: commits } = await octo.repos.listCommits({ owner, repo, per_page: perPage });
+      const { data: commits } = await octo.repos.listCommits({
+        owner,
+        repo,
+        sha: branch,
+        per_page: perPage
+      });
 
       // No commits found (e.g. empty repo or wrong branch)
       if (!commits.length) {

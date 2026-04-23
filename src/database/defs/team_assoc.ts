@@ -52,4 +52,11 @@ export interface DatabaseTeamAssocManager {
    * @returns If the member was successfully removed from a team.
    */
   removeMemberFromTeam(team_slug: string, discord_id: string): Promise<void>;
+  /**
+   * Permission level for this user on this team, if they are associated in the DB.
+   */
+  getMemberTeamPermission(
+    team_slug: string,
+    discord_id: string
+  ): Promise<TeamPermissionLevel | null>;
 }

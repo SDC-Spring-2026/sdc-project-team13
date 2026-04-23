@@ -2,6 +2,7 @@ import Database, { type Database as SQLDatabase } from "better-sqlite3";
 import { join } from "path";
 import { dbLogger as logger } from "..";
 import { alreadyClosedError, alreadyOpenError, noOpWhileClosedError } from "../errors";
+import { tbl } from "../physicalTables";
 import { Driver } from ".";
 
 let sql: SQLDatabase;
@@ -13,7 +14,6 @@ export const sqliteDriver: Driver = {
   getRawDBInstance: () => sql,
 
   query<T = Record<string, unknown>>(sql_str: string, params: unknown[] = []): Promise<T[]> {
-    // Convert boolean params to integers (SQLite has no native boolean).
     const converted = params.map((p) => (typeof p === "boolean" ? (p ? 1 : 0) : p));
     const rows = sql.prepare(sql_str).all(...converted) as T[];
     return Promise.resolve(rows);
@@ -37,15 +37,21 @@ export const sqliteDriver: Driver = {
     if (!ready) throw noOpWhileClosedError();
     logger.verbose("Creating tables if they dont exist...");
 
+    const M = tbl("members");
+    const T = tbl("teams");
+    const A = tbl("teamAssociations");
+    const P = tbl("projects");
+    const H = tbl("messageHistory");
+
     sql.prepare(`
-      CREATE TABLE IF NOT EXISTS Members (
+      CREATE TABLE IF NOT EXISTS ${M} (
         discord TEXT PRIMARY KEY NOT NULL,
         github  TEXT UNIQUE
       )
     `).run();
 
     sql.prepare(`
-      CREATE TABLE IF NOT EXISTS Teams (
+      CREATE TABLE IF NOT EXISTS ${T} (
         slug       TEXT    PRIMARY KEY NOT NULL,
         role_id    TEXT,
         channel_id TEXT,
@@ -54,7 +60,7 @@ export const sqliteDriver: Driver = {
     `).run();
 
     sql.prepare(`
-      CREATE TABLE IF NOT EXISTS TeamAssociations (
+      CREATE TABLE IF NOT EXISTS ${A} (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id    TEXT    NOT NULL,
         team_slug  TEXT    NOT NULL,
@@ -63,7 +69,7 @@ export const sqliteDriver: Driver = {
     `).run();
 
     sql.prepare(`
-      CREATE TABLE IF NOT EXISTS Projects (
+      CREATE TABLE IF NOT EXISTS ${P} (
         slug      TEXT    PRIMARY KEY NOT NULL,
         name      TEXT    NOT NULL,
         team_slug TEXT    NOT NULL,
@@ -72,7 +78,7 @@ export const sqliteDriver: Driver = {
     `).run();
 
     sql.prepare(`
-      CREATE TABLE IF NOT EXISTS MessageHistory (
+      CREATE TABLE IF NOT EXISTS ${H} (
         id        INTEGER PRIMARY KEY AUTOINCREMENT,
         team_slug TEXT,
         user_id   TEXT,
@@ -81,6 +87,17 @@ export const sqliteDriver: Driver = {
         content   TEXT
       )
     `).run();
+
+    const teamCols = sql
+      .prepare(`PRAGMA table_info(${T})`)
+      .all() as { name: string }[];
+    const teamColSet = new Set(teamCols.map((c) => c.name.toLowerCase()));
+    if (!teamColSet.has("role_id")) {
+      sql.exec(`ALTER TABLE ${T} ADD COLUMN role_id TEXT`);
+    }
+    if (!teamColSet.has("channel_id")) {
+      sql.exec(`ALTER TABLE ${T} ADD COLUMN channel_id TEXT`);
+    }
 
     logger.verbose("Tables ready.");
   },

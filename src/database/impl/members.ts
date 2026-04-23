@@ -1,18 +1,21 @@
 import { DatabaseMembersManager } from "../defs/members";
 import { Teams } from "../defs/teams";
 import { driver } from "../driver";
+import { tbl } from "../physicalTables";
 
 export const db_members: DatabaseMembersManager = {
   async getMemberTeams(discord, inactives) {
+    const A = tbl("teamAssociations");
+    const T = tbl("teams");
     const assocs = await driver().query<{ team_slug: string }>(
-      "SELECT team_slug FROM TeamAssociations WHERE user_id = ?",
+      `SELECT team_slug FROM ${A} WHERE user_id = ?`,
       [discord]
     );
 
     const teams = await Promise.all(
       assocs.map((row) =>
         driver()
-          .query<Teams>("SELECT * FROM Teams WHERE slug = ?", [row.team_slug])
+          .query<Teams>(`SELECT * FROM ${T} WHERE slug = ?`, [row.team_slug])
           .then((r) => r[0])
       )
     );
@@ -22,8 +25,9 @@ export const db_members: DatabaseMembersManager = {
   },
 
   async validateMemberRegistration(discord, github) {
+    const M = tbl("members");
     const rows = await driver().query(
-      "SELECT 1 FROM Members WHERE discord = ? OR github = ?",
+      `SELECT 1 FROM ${M} WHERE discord = ? OR github = ?`,
       [discord, github]
     );
     if (rows.length !== 0) {
@@ -32,20 +36,33 @@ export const db_members: DatabaseMembersManager = {
   },
 
   async registerMember(discord, github) {
-    await driver().query(
-      "INSERT INTO Members (discord, github) VALUES (?, ?)",
-      [discord, github]
-    );
+    const M = tbl("members");
+    await driver().query(`INSERT INTO ${M} (discord, github) VALUES (?, ?)`, [
+      discord,
+      github
+    ]);
   },
 
   async updateMemberRegistration(discord, github) {
-    await driver().query(
-      "UPDATE Members SET github = ? WHERE discord = ?",
-      [github, discord]
-    );
+    const M = tbl("members");
+    await driver().query(`UPDATE ${M} SET github = ? WHERE discord = ?`, [
+      github,
+      discord
+    ]);
   },
 
   async unregisterMember(discord) {
-    await driver().query("DELETE FROM Members WHERE discord = ?", [discord]);
+    const M = tbl("members");
+    await driver().query(`DELETE FROM ${M} WHERE discord = ?`, [discord]);
+  },
+
+  async getMemberGithub(discord) {
+    const M = tbl("members");
+    const rows = await driver().query<{ github: string | null }>(
+      `SELECT github FROM ${M} WHERE discord = ?`,
+      [discord]
+    );
+    const g = rows[0]?.github;
+    return g && g.length > 0 ? g : null;
   }
 };
