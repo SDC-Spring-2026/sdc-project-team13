@@ -32,6 +32,25 @@ export const manageCommand = {
     },
     {
       type: 1, // Subcommand
+      name: "rename",
+      description: "Rename your project's display name",
+      options: [
+        {
+          type: 3,
+          name: "group",
+          description: "Name of the group",
+          required: true
+        },
+        {
+          type: 3,
+          name: "name",
+          description: "New project display name",
+          required: true
+        }
+      ]
+    },
+    {
+      type: 1, // Subcommand
       name: "transfer",
       description: "Transfer team leadership to another member",
       options: [
@@ -57,6 +76,8 @@ export async function handleManage(interaction: ChatInputCommandInteraction) {
 
   if (sub === "description") {
     await handleDescription(interaction);
+  } else if (sub === "rename") {
+    await handleRename(interaction);
   } else if (sub === "transfer") {
     await handleTransfer(interaction);
   }
@@ -114,6 +135,50 @@ async function handleDescription(interaction: ChatInputCommandInteraction) {
   } catch (err) {
     logger.error(`Failed to update project "${project}" for ${interaction.user.tag}: ${err instanceof Error ? err.message : String(err)}`);
     await interaction.editReply("Failed to update project.");
+  }
+}
+
+async function handleRename(interaction: ChatInputCommandInteraction) {
+  const group = interaction.options.getString("group", true);
+  const name = interaction.options.getString("name", true);
+  const guild = interaction.guild;
+
+  if (!guild) {
+    await interaction.reply({ flags: MessageFlags.Ephemeral, content: "This command can only be used in a server!" });
+    return;
+  }
+
+  if (!(await requireRegistered(interaction))) return;
+
+  const formattedGroup = group.toLowerCase().replace(/\s+/g, "-");
+  const teamSlug = await resolveTeamSlug(guild, formattedGroup);
+  if (!teamSlug) {
+    await interaction.reply({ flags: MessageFlags.Ephemeral, content: `No group called **${group}** found.` });
+    return;
+  }
+
+  if (!(await db.isTeamLeader(teamSlug, interaction.user.id))) {
+    await interaction.reply({ flags: MessageFlags.Ephemeral, content: "Only the team leader can rename the project." });
+    return;
+  }
+
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  try {
+    const project = await db.getPrimaryActiveProjectForTeam(teamSlug);
+    if (!project) {
+      await interaction.editReply("No active project found for your team.");
+      return;
+    }
+
+    const oldName = project.name;
+    await db.changeProjectDisplayName(project.slug, name);
+
+    logger.info(`Project "${oldName}" (team: ${teamSlug}) renamed to "${name}" by ${interaction.user.tag}`);
+    await interaction.editReply(`✅ Project renamed from **${oldName}** to **${name}**.`);
+  } catch (err) {
+    logger.error(`Failed to rename project for ${interaction.user.tag}: ${err instanceof Error ? err.message : String(err)}`);
+    await interaction.editReply("Failed to rename project.");
   }
 }
 
