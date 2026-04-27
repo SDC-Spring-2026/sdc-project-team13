@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction } from "discord.js";
+import { ChatInputCommandInteraction, MessageFlags } from "discord.js";
 import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
 import { createNewLogger } from "../../tools/log";
@@ -29,21 +29,21 @@ export async function handleGroup(interaction: ChatInputCommandInteraction) {
     const guild = interaction.guild;
 
     if (!guild) {
-        await interaction.reply({ content: "This command can only be used in a server!" });
+        await interaction.reply({ flags: MessageFlags.Ephemeral, content: "This command can only be used in a server!" });
         return;
     }
 
     if (!await requireRegistered(interaction)) return;
 
+    const teamSlug = await resolveTeamSlug(guild, formattedName);
+    if (!teamSlug) {
+        await interaction.reply({ flags: MessageFlags.Ephemeral, content: `No group found named **${name}**.` });
+        return;
+    }
+
     await interaction.deferReply();
 
     try {
-        const teamSlug = await resolveTeamSlug(guild, formattedName);
-        if (!teamSlug) {
-            await interaction.editReply(`No group found named **${name}**.`);
-            return;
-        }
-
         const members = await db.getTeamMembers(teamSlug);
         if (members.length === 0) {
             await interaction.editReply(`No members found in **${name}**.`);

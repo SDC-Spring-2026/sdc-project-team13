@@ -50,7 +50,14 @@ export async function handleJoin(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    const channel = guild.channels.cache.find(c => c.name === formattedName);
+    const existingPerm = await db.getMemberTeamPermission(teamSlug, interaction.user.id);
+    if (existingPerm !== null) {
+        await interaction.reply({ flags: MessageFlags.Ephemeral, content: `You are already a member of **${name}**!` });
+        return;
+    }
+
+    const teamRecord = await db.getTeam(teamSlug);
+    const channel = teamRecord ? guild.channels.cache.get(teamRecord.channel_id) : undefined;
     if (!channel || !channel.isTextBased()) {
         await interaction.reply({ flags: MessageFlags.Ephemeral, content: `No group called **${name}** found!` });
         return;

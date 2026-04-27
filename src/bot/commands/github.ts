@@ -1,5 +1,6 @@
-import { ChatInputCommandInteraction, EmbedBuilder } from "discord.js";
+import { ChatInputCommandInteraction, EmbedBuilder, MessageFlags } from "discord.js";
 import { getOctokit } from "../../integrations/github";
+import { db } from "../../database";
 import { createNewLogger } from "../../tools/log";
 
 const logger = createNewLogger("cmd:github");
@@ -22,8 +23,8 @@ export const githubCommand = {
         {
           type: 3, // STRING
           name: "target",
-          description: "The repo name or URL (e.g. vercel/next.js or https://github.com/vercel/next.js)",
-          required: true,
+          description: "Repo name or URL — leave blank to use your team's linked repo",
+          required: false,
         },
       ],
     },
@@ -35,8 +36,8 @@ export const githubCommand = {
         {
           type: 3,
           name: "target",
-          description: "The repo name or URL (e.g. vercel/next.js or https://github.com/vercel/next.js)",
-          required: true,
+          description: "Repo name or URL — leave blank to use your team's linked repo",
+          required: false,
         },
         {
           type: 3,
@@ -82,6 +83,58 @@ function parseRepoTarget(raw: string): { owner: string; repo: string } | null {
 }
 
 /**
+ * Resolves the owner/repo pair from either the user-provided target string
+ * or the team linked to the current channel. Returns null and replies with
+ * an ephemeral error if neither source can produce a valid target.
+ */
+async function resolveRepo(
+  interaction: ChatInputCommandInteraction
+): Promise<{ owner: string; repo: string } | null> {
+  const targetInput = interaction.options.getString("target");
+
+  if (targetInput) {
+    const parsed = parseRepoTarget(targetInput);
+    if (!parsed) {
+      await interaction.reply({
+        flags: MessageFlags.Ephemeral,
+        content: "Please provide a valid GitHub repo, e.g. `vercel/next.js` or a full GitHub URL."
+      });
+      return null;
+    }
+    return parsed;
+  }
+
+  // No target provided — look up the team linked to this channel
+  const team = await db.getTeamByChannelId(interaction.channelId);
+  if (!team) {
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "This channel isn't linked to a team. Provide a repo target manually, e.g. `vercel/next.js`."
+    });
+    return null;
+  }
+
+  if (!team.github_repo) {
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "This team doesn't have a GitHub repo linked yet."
+    });
+    return null;
+  }
+
+  const org = process.env.GITHUB_ORG;
+  if (!org) {
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "GitHub org is not configured on this bot."
+    });
+    return null;
+  }
+
+  return { owner: org, repo: team.github_repo };
+}
+
+/**
  * Handles user interactions for the /github command.
  * Based on which subcommand the user used ("repo" or "commits"),
  * it calls the GitHub API and replies with the appropriate info.
@@ -89,23 +142,14 @@ function parseRepoTarget(raw: string): { owner: string; repo: string } | null {
 export async function handleGithub(interaction: ChatInputCommandInteraction) {
   const sub = interaction.options.getSubcommand();
 
-  // Defer reply so the bot has time to fetch data before Discord times out
+  const parsed = await resolveRepo(interaction);
+  if (!parsed) return; // resolveRepo already replied with an error
+
   await interaction.deferReply();
 
   try {
     // Create or reuse Octokit client
     const octo = await getOctokit();
-
-    // Get and parse the target repository
-    const target = interaction.options.getString("target", true);
-    const parsed = parseRepoTarget(target);
-    if (!parsed) {
-      await interaction.editReply(
-        "Please provide a valid GitHub repo, e.g. `vercel/next.js` or a full GitHub URL."
-      );
-      return;
-    }
-
     const { owner, repo } = parsed;
 
     /** ------------------------------
@@ -117,6 +161,14 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
       // get most recent commit for display
       const {data: recentCommits} = await octo.repos.listCommits({owner, repo, per_page: 1});
       const latest = recentCommits[0];
+
+      const commitFields = latest ? [
+            {name: '📝 Latest Commit', value: latest.commit.message.split('\n')[0]},
+            {name: '👤 By', value: latest.commit.author?.name ?? 'unknown', inline: true},
+            {name: '🕰️ When', value: new Date(latest.commit.author?.date ?? '').toLocaleString(), inline: true}
+      ] : [
+            {name: '📝 Latest Commit', value: 'No commits yet'}
+      ];
 
       // create the message to be displayed in discord using Discord.js's EmbedBuilder
       const embed = new EmbedBuilder()
@@ -130,9 +182,7 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
             {name: '🍴 Forks', value: String(data.forks_count), inline: true},
             {name: '🫨 Issues', value: String(data.open_issues_count), inline: true},
             {name: "🗣️ Language",    value: data.language ?? "Unknown", inline: true},
-            {name: '📝 Latest Commit', value: latest.commit.message.split('\n')[0]},
-            {name: '👤 By', value: latest.commit.author?.name ?? 'unknown', inline: true},
-            {name: '🕰️ When', value: new Date(latest.commit.author?.date ?? '').toLocaleString(), inline: true}
+            ...commitFields
           )
           .setFooter({text: 'Brought to you be Cache 🤖'})
           .setThumbnail(data.owner.avatar_url);

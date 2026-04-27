@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, ChannelType, MessageFlags } from "discord.js";
+import { ChatInputCommandInteraction, ChannelType, MessageFlags, PermissionFlagsBits } from "discord.js";
 import { db } from "../../database";
 import { createNewLogger } from "../../tools/log";
 import { requireRegistered } from "./requireRegistered";
@@ -74,7 +74,17 @@ export async function handleCreate(interaction: ChatInputCommandInteraction) {
             name: teamSlug,
             type: ChannelType.GuildText,
             topic: description,
-            parent: category.id
+            parent: category.id,
+            permissionOverwrites: [
+                {
+                    id: guild.roles.everyone,
+                    deny: [PermissionFlagsBits.SendMessages]
+                },
+                {
+                    id: role,
+                    allow: [PermissionFlagsBits.SendMessages]
+                }
+            ]
         });
 
         await db.finalizeNewTeam(teamSlug, channel.id, role.id, interaction.user.id);
