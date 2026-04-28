@@ -11,6 +11,8 @@ import { leaveCommand, handleLeave } from "./leave";
 import { manageCommand, handleManage } from "./manage";
 import { githubCommand, handleGithub } from "./github";
 import { whoisCommand, handleWhois } from "./whois";
+import { disableCommand, handleDisable } from "./disable";
+import { enableCommand, handleEnable } from "./enable";
 
 /**
  * Central registry for slash commands:
@@ -21,7 +23,8 @@ export const commandDefinitions = [
     registerCommand, unregisterCommand,
     createCommand, teamCommand, projectsCommand,
     groupCommand, joinCommand, kickCommand, leaveCommand,
-    manageCommand, githubCommand, whoisCommand
+    manageCommand, githubCommand, whoisCommand,
+    disableCommand, enableCommand
 ];
 export const commandHandlers = new Map([
     [registerCommand.name, handleRegister],
@@ -35,5 +38,7 @@ export const commandHandlers = new Map([
     [leaveCommand.name, handleLeave],
     [manageCommand.name, handleManage],
     [githubCommand.name, handleGithub],
-    [whoisCommand.name, handleWhois]
+    [whoisCommand.name, handleWhois],
+    [disableCommand.name, handleDisable],
+    [enableCommand.name, handleEnable]
 ]);

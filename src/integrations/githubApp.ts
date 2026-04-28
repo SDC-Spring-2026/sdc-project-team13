@@ -85,6 +85,22 @@ export async function addRepoCollaborator(repoName: string, githubUsername: stri
 }
 
 /**
+ * Archives or unarchives a team's repository.
+ */
+export async function setTeamRepoArchived(repoName: string, archived: boolean): Promise<void> {
+    const octokit = await getAppOctokit();
+    const org = getOrg();
+
+    await octokit.request("PATCH /repos/{owner}/{repo}", {
+        owner: org,
+        repo: repoName,
+        archived,
+    });
+
+    log.info(`Repo ${org}/${repoName} ${archived ? "archived" : "unarchived"}`);
+}
+
+/**
  * Revokes a GitHub user's access to a team's repo.
  */
 export async function removeRepoCollaborator(repoName: string, githubUsername: string): Promise<void> {
