@@ -15,10 +15,10 @@ export interface Driver extends DatabaseConfManager {
 // Lazily import so the unused driver's package isn't required at startup.
 async function loadDriver(): Promise<Driver> {
   if (process.env.DATABASE_URL) {
-    const { postgresDriver } = await import("./postgres");
+    const { postgresDriver } = await import("./postgres.js");
     return postgresDriver;
   } else {
-    const { sqliteDriver } = await import("./sqlite");
+    const { sqliteDriver } = await import("./sqlite.js");
     return sqliteDriver;
   }
 }

@@ -4,7 +4,7 @@ import { createNewLogger } from "../tools/log";
  * Type import for Octokit (the GitHub REST client).
  * This prevents TypeScript from loading it until runtime.
  */
-type OctokitType = import("@octokit/rest").Octokit;
+type OctokitType = import("@octokit/rest", { with: { "resolution-mode": "import" } }).Octokit;
 
 // Create a dedicated logger for GitHub integration.
 const log = createNewLogger("github");
@@ -31,7 +31,7 @@ export async function getOctokit(): Promise<OctokitType> {
   // Only create one Octokit client (singleton)
   if (!octo) {
     // Dynamically import Octokit (ESM-safe)
-    const { Octokit } = await dynamicImport<typeof import("@octokit/rest")>(
+    const { Octokit } = await dynamicImport<typeof import("@octokit/rest", { with: { "resolution-mode": "import" } })>(
       "@octokit/rest"
     );
 

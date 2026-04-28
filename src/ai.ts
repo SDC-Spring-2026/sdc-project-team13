@@ -1,11 +1,11 @@
-import { GoogleGenAI } from "@google/genai";
 import { CACHE_BOT_INSTRUCTIONS } from "./botInstructions";
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
+type GoogleGenAI = import("@google/genai", { with: { "resolution-mode": "import" } }).GoogleGenAI;
 let ai: GoogleGenAI | null = null;
 
-function getAiClient(): GoogleGenAI | null {
+async function getAiClient(): Promise<GoogleGenAI | null> {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -13,6 +13,7 @@ function getAiClient(): GoogleGenAI | null {
   }
 
   if (!ai) {
+    const { GoogleGenAI } = await import("@google/genai");
     ai = new GoogleGenAI({ apiKey });
   }
 
@@ -23,7 +24,7 @@ export async function askCache(
   prompt: string,
   options?: { sessionContext?: string }
 ): Promise<string> {
-  const client = getAiClient();
+  const client = await getAiClient();
 
   if (!client) {
     return "AI chat is not configured yet. Add `GEMINI_API_KEY` to your `.env` file.";
