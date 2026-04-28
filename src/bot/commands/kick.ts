@@ -3,6 +3,7 @@ import {
   GuildMember,
   MessageFlags
 } from "discord.js";
+import { isGuildAdmin } from "./isGuildAdmin";
 import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
 import { TeamPermissionLevel } from "../../database/defs/team_assoc";
@@ -109,7 +110,7 @@ export async function handleKick(interaction: ChatInputCommandInteraction) {
     teamSlug,
     interaction.user.id
   );
-  if (callerPerm !== TeamPermissionLevel.LEADER) {
+  if (!isGuildAdmin(interaction) && callerPerm !== TeamPermissionLevel.LEADER) {
     await interaction.reply({
       flags: MessageFlags.Ephemeral,
       content: "Only the team leader can kick members."
@@ -143,7 +144,7 @@ export async function handleKick(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  if (targetPerm === TeamPermissionLevel.LEADER) {
+  if (!isGuildAdmin(interaction) && targetPerm === TeamPermissionLevel.LEADER) {
     await interaction.reply({
       flags: MessageFlags.Ephemeral,
       content:
