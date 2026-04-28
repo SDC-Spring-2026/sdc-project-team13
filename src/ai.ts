@@ -41,13 +41,25 @@ export async function askCache(
       ].join("\n")
     : prompt;
 
-  const response = await client.models.generateContent({
-    model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
-    contents,
-    config: {
-      systemInstruction: CACHE_BOT_INSTRUCTIONS
+  let response;
+  try {
+    response = await client.models.generateContent({
+      model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
+      contents,
+      config: {
+        systemInstruction: CACHE_BOT_INSTRUCTIONS
+      }
+    });
+  } catch (err) {
+    const raw = err instanceof Error ? err.message : String(err);
+    try {
+      const parsed = JSON.parse(raw) as { error?: { message?: string } };
+      if (parsed?.error?.message) return parsed.error.message;
+    } catch {
+      // Not a JSON payload — fall through and rethrow
     }
-  });
+    throw err;
+  }
 
   const text = response.text?.trim();
   return text && text.length > 0
