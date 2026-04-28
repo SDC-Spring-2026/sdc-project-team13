@@ -78,11 +78,21 @@ export async function handleCreate(interaction: ChatInputCommandInteraction) {
             permissionOverwrites: [
                 {
                     id: guild.roles.everyone,
-                    deny: [PermissionFlagsBits.SendMessages]
+                    deny: [
+                        PermissionFlagsBits.SendMessages,
+                        PermissionFlagsBits.SendMessagesInThreads,
+                        PermissionFlagsBits.CreatePublicThreads,
+                        PermissionFlagsBits.CreatePrivateThreads,
+                    ]
                 },
                 {
                     id: role,
-                    allow: [PermissionFlagsBits.SendMessages]
+                    allow: [
+                        PermissionFlagsBits.SendMessages,
+                        PermissionFlagsBits.SendMessagesInThreads,
+                        PermissionFlagsBits.CreatePublicThreads,
+                        PermissionFlagsBits.CreatePrivateThreads,
+                    ]
                 }
             ]
         });
