@@ -24,7 +24,9 @@ export type DatabaseManager = DatabaseConfManager &
   DatabaseBotConfigManager;
 
 /**
- * The database object. Call `db.initiate()` then `db.setup()` before use.
+ * The database object. Call `db.initiate()` before use.
+ * `db.setup()` creates/migrates tables and is run separately by `yarn setup`
+ * (see `src/setup.ts`); the bot itself does not issue DDL on startup.
  * The underlying driver (SQLite or PostgreSQL) is chosen automatically based
  * on whether `DATABASE_URL` is present in the environment.
  */

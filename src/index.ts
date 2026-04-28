@@ -45,7 +45,6 @@ logger.info("Starting the program...");
 
 (async () => {
   await db.initiate();
-  await db.setup();
 
   getBotClient()
     .then((client) => {
