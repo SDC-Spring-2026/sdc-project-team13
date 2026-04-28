@@ -1,7 +1,13 @@
 import { loadEnvConfig } from "@next/env";
 import { Shield } from "lucide-react";
 import { AppShell } from "../../components/app-shell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "../../components/ui/card";
 import { requireWebAdmin } from "../../lib/adminAuth";
 import { AdminTools } from "../../components/admin-tools";
 import { maskId } from "../../lib/redact";
@@ -25,11 +31,13 @@ export default async function AdminPage() {
               Admin access
             </CardTitle>
             <CardDescription>
-              You’re signed in as <span className="font-mono">{maskId(userId)}</span>.
+              You’re signed in as{" "}
+              <span className="font-mono">{maskId(userId)}</span>.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Role flags: {isAdmin ? "admin" : "—"} {isPresident ? "president" : "—"}
+            Role flags: {isAdmin ? "admin" : "—"}{" "}
+            {isPresident ? "president" : "—"}
           </CardContent>
         </Card>
 
@@ -38,4 +46,3 @@ export default async function AdminPage() {
     </AppShell>
   );
 }
-

@@ -1,4 +1,8 @@
-import { ChatInputCommandInteraction, EmbedBuilder, MessageFlags } from "discord.js";
+import {
+  ChatInputCommandInteraction,
+  EmbedBuilder,
+  MessageFlags
+} from "discord.js";
 import { getOctokit } from "../../integrations/github";
 import { db } from "../../database";
 import { createNewLogger } from "../../tools/log";
@@ -23,10 +27,11 @@ export const githubCommand = {
         {
           type: 3, // STRING
           name: "target",
-          description: "Repo name or URL — leave blank to use your team's linked repo",
-          required: false,
-        },
-      ],
+          description:
+            "Repo name or URL — leave blank to use your team's linked repo",
+          required: false
+        }
+      ]
     },
     {
       type: 1, // SUB_COMMAND
@@ -36,22 +41,23 @@ export const githubCommand = {
         {
           type: 3,
           name: "target",
-          description: "Repo name or URL — leave blank to use your team's linked repo",
-          required: false,
+          description:
+            "Repo name or URL — leave blank to use your team's linked repo",
+          required: false
         },
         {
           type: 3,
           name: "branch",
           description: "Branch name (optional)",
-          required: false,
+          required: false
         },
         {
           type: 4, // INTEGER
           name: "limit",
           description: "How many commits to list (1–20)",
-          required: false,
-        },
-      ],
+          required: false
+        }
+      ]
     },
     {
       type: 1, // SUB_COMMAND
@@ -61,10 +67,11 @@ export const githubCommand = {
         {
           type: 3,
           name: "target",
-          description: "Repo name or URL — leave blank to use your team's linked repo",
-          required: false,
-        },
-      ],
+          description:
+            "Repo name or URL — leave blank to use your team's linked repo",
+          required: false
+        }
+      ]
     },
     {
       type: 1, // SUB_COMMAND
@@ -74,12 +81,13 @@ export const githubCommand = {
         {
           type: 3,
           name: "target",
-          description: "Repo name or URL — leave blank to use your team's linked repo",
-          required: false,
-        },
-      ],
-    },
-  ],
+          description:
+            "Repo name or URL — leave blank to use your team's linked repo",
+          required: false
+        }
+      ]
+    }
+  ]
 };
 
 /**
@@ -123,7 +131,8 @@ async function resolveRepo(
     if (!parsed) {
       await interaction.reply({
         flags: MessageFlags.Ephemeral,
-        content: "Please provide a valid GitHub repo, e.g. `vercel/next.js` or a full GitHub URL."
+        content:
+          "Please provide a valid GitHub repo, e.g. `vercel/next.js` or a full GitHub URL."
       });
       return null;
     }
@@ -135,7 +144,8 @@ async function resolveRepo(
   if (!team) {
     await interaction.reply({
       flags: MessageFlags.Ephemeral,
-      content: "This channel isn't linked to a team. Provide a repo target manually, e.g. `vercel/next.js`."
+      content:
+        "This channel isn't linked to a team. Provide a repo target manually, e.g. `vercel/next.js`."
     });
     return null;
   }
@@ -185,16 +195,33 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
       const { data } = await octo.repos.get({ owner, repo });
 
       // get most recent commit for display
-      const {data: recentCommits} = await octo.repos.listCommits({owner, repo, per_page: 1});
+      const { data: recentCommits } = await octo.repos.listCommits({
+        owner,
+        repo,
+        per_page: 1
+      });
       const latest = recentCommits[0];
 
-      const commitFields = latest ? [
-            {name: '📝 Latest Commit', value: latest.commit.message.split('\n')[0]},
-            {name: '👤 By', value: latest.commit.author?.name ?? 'unknown', inline: true},
-            {name: '🕰️ When', value: new Date(latest.commit.author?.date ?? '').toLocaleString(), inline: true}
-      ] : [
-            {name: '📝 Latest Commit', value: 'No commits yet'}
-      ];
+      const commitFields = latest
+        ? [
+            {
+              name: "📝 Latest Commit",
+              value: latest.commit.message.split("\n")[0]
+            },
+            {
+              name: "👤 By",
+              value: latest.commit.author?.name ?? "unknown",
+              inline: true
+            },
+            {
+              name: "🕰️ When",
+              value: new Date(
+                latest.commit.author?.date ?? ""
+              ).toLocaleString(),
+              inline: true
+            }
+          ]
+        : [{ name: "📝 Latest Commit", value: "No commits yet" }];
 
       // create the message to be displayed in discord using Discord.js's EmbedBuilder
       const embed = new EmbedBuilder()
@@ -202,19 +229,41 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
         .setURL(data.html_url)
         .setColor(0x00cc66)
         .addFields(
-            {name: '🌲 Default branch', value: data.default_branch, inline: true},
-            {name: '👀 Visibility', value: data.private ? "private" : "public", inline: true},
-            {name: '🌠 Stars', value: String(data.stargazers_count), inline: true},
-            {name: '🍴 Forks', value: String(data.forks_count), inline: true},
-            {name: '🫨 Issues', value: String(data.open_issues_count), inline: true},
-            {name: "🗣️ Language",    value: data.language ?? "Unknown", inline: true},
-            ...commitFields
-          )
-          .setFooter({text: 'Brought to you be Cache 🤖'})
-          .setThumbnail(data.owner.avatar_url);
+          {
+            name: "🌲 Default branch",
+            value: data.default_branch,
+            inline: true
+          },
+          {
+            name: "👀 Visibility",
+            value: data.private ? "private" : "public",
+            inline: true
+          },
+          {
+            name: "🌠 Stars",
+            value: String(data.stargazers_count),
+            inline: true
+          },
+          { name: "🍴 Forks", value: String(data.forks_count), inline: true },
+          {
+            name: "🫨 Issues",
+            value: String(data.open_issues_count),
+            inline: true
+          },
+          {
+            name: "🗣️ Language",
+            value: data.language ?? "Unknown",
+            inline: true
+          },
+          ...commitFields
+        )
+        .setFooter({ text: "Brought to you be Cache 🤖" })
+        .setThumbnail(data.owner.avatar_url);
 
-      logger.info(`Repo info fetched for ${owner}/${repo} by ${interaction.user.tag}`);
-      await interaction.editReply({embeds: [embed]});
+      logger.info(
+        `Repo info fetched for ${owner}/${repo} by ${interaction.user.tag}`
+      );
+      await interaction.editReply({ embeds: [embed] });
       return;
     }
 
@@ -248,9 +297,11 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
       // lambda expression that builds a string full of all the commit data for display
       const lines = commits.map((c, i) => {
         const sha = c.sha?.slice(0, 7); // get first 7 characters of commit hash
-        const msg = c.commit?.message.split('\n')[0]; // get commit message
-        const author = c.commit?.author?.name ?? 'unknown'; // get author name
-        const date = new Date(c.commit?.author?.date ?? '').toLocaleDateString(); // get timestamp
+        const msg = c.commit?.message.split("\n")[0]; // get commit message
+        const author = c.commit?.author?.name ?? "unknown"; // get author name
+        const date = new Date(
+          c.commit?.author?.date ?? ""
+        ).toLocaleDateString(); // get timestamp
         return `**${i + 1}.** [\`${sha}\`](https://github.com/${owner}/${repo}/commit/${c.sha}) ${msg}\n└ ${author} • ${date}`;
       });
 
@@ -259,13 +310,14 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
         .setTitle(`${owner}/${repo}`)
         .setURL(repoData.html_url)
         .setColor(660066)
-        .setDescription(lines.join('\n\n'))
-        .setFooter({text: 'Brought to you be Cache 🤖'})
+        .setDescription(lines.join("\n\n"))
+        .setFooter({ text: "Brought to you be Cache 🤖" })
         .setThumbnail(repoData.owner.avatar_url);
 
-
-      logger.info(`${perPage} commits fetched for ${owner}/${repo}${branch ? `@${branch}` : ""} by ${interaction.user.tag}`);
-      await interaction.editReply({embeds: [embed2]});
+      logger.info(
+        `${perPage} commits fetched for ${owner}/${repo}${branch ? `@${branch}` : ""} by ${interaction.user.tag}`
+      );
+      await interaction.editReply({ embeds: [embed2] });
       return;
     }
 
@@ -282,14 +334,14 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
       });
 
       // GitHub's issues endpoint returns PRs too — filter them out
-      const issues = allItems.filter(i => !i.pull_request);
+      const issues = allItems.filter((i) => !i.pull_request);
 
       if (!issues.length) {
         await interaction.editReply("No open issues found.");
         return;
       }
 
-      const lines = issues.map(i => {
+      const lines = issues.map((i) => {
         const assignee = i.assignee ? ` — @${i.assignee.login}` : "";
         return `**#${i.number}** [${i.title}](${i.html_url})${assignee}`;
       });
@@ -298,11 +350,15 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
         .setTitle(`Open Issues — ${owner}/${repo}`)
         .setURL(`${repoData.html_url}/issues`)
         .setColor(0xe4432d)
-        .setDescription(lines.join('\n'))
-        .setFooter({ text: `${issues.length} open issue${issues.length !== 1 ? 's' : ''} • Brought to you by Cache 🤖` })
+        .setDescription(lines.join("\n"))
+        .setFooter({
+          text: `${issues.length} open issue${issues.length !== 1 ? "s" : ""} • Brought to you by Cache 🤖`
+        })
         .setThumbnail(repoData.owner.avatar_url);
 
-      logger.info(`Issues fetched for ${owner}/${repo} by ${interaction.user.tag}`);
+      logger.info(
+        `Issues fetched for ${owner}/${repo} by ${interaction.user.tag}`
+      );
       await interaction.editReply({ embeds: [embed] });
       return;
     }
@@ -324,7 +380,7 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
         return;
       }
 
-      const lines = prs.map(pr => {
+      const lines = prs.map((pr) => {
         const author = pr.user ? ` — @${pr.user.login}` : "";
         const base = pr.base.ref;
         return `**#${pr.number}** [${pr.title}](${pr.html_url}) → \`${base}\`${author}`;
@@ -334,11 +390,15 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
         .setTitle(`Open Pull Requests — ${owner}/${repo}`)
         .setURL(`${repoData.html_url}/pulls`)
         .setColor(0x8957e5)
-        .setDescription(lines.join('\n'))
-        .setFooter({ text: `${prs.length} open PR${prs.length !== 1 ? 's' : ''} • Brought to you by Cache 🤖` })
+        .setDescription(lines.join("\n"))
+        .setFooter({
+          text: `${prs.length} open PR${prs.length !== 1 ? "s" : ""} • Brought to you by Cache 🤖`
+        })
         .setThumbnail(repoData.owner.avatar_url);
 
-      logger.info(`PRs fetched for ${owner}/${repo} by ${interaction.user.tag}`);
+      logger.info(
+        `PRs fetched for ${owner}/${repo} by ${interaction.user.tag}`
+      );
       await interaction.editReply({ embeds: [embed] });
       return;
     }

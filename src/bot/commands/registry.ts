@@ -1,4 +1,3 @@
-
 import { registerCommand, handleRegister } from "./register";
 import { unregisterCommand, handleUnregister } from "./unregister";
 import { createCommand, handleCreate } from "./create";
@@ -22,29 +21,38 @@ import { adminCommand, handleAdmin } from "./admin";
  * - commandHandlers: used at runtime to route interactions by name
  */
 export const commandDefinitions = [
-    registerCommand, unregisterCommand,
-    createCommand, teamCommand, projectsCommand,
-    groupCommand, joinCommand, kickCommand, leaveCommand,
-    manageCommand, githubCommand, whoisCommand,
-    disableCommand, enableCommand,
-    purgeCommand,
-    adminCommand
+  registerCommand,
+  unregisterCommand,
+  createCommand,
+  teamCommand,
+  projectsCommand,
+  groupCommand,
+  joinCommand,
+  kickCommand,
+  leaveCommand,
+  manageCommand,
+  githubCommand,
+  whoisCommand,
+  disableCommand,
+  enableCommand,
+  purgeCommand,
+  adminCommand
 ];
 export const commandHandlers = new Map([
-    [registerCommand.name, handleRegister],
-    [unregisterCommand.name, handleUnregister],
-    [createCommand.name, handleCreate],
-    [teamCommand.name, handleTeam],
-    [projectsCommand.name, handleProjects],
-    [groupCommand.name, handleGroup],
-    [joinCommand.name, handleJoin],
-    [kickCommand.name, handleKick],
-    [leaveCommand.name, handleLeave],
-    [manageCommand.name, handleManage],
-    [githubCommand.name, handleGithub],
-    [whoisCommand.name, handleWhois],
-    [disableCommand.name, handleDisable],
-    [enableCommand.name, handleEnable],
-    [purgeCommand.name, handlePurge],
-    [adminCommand.name, handleAdmin]
+  [registerCommand.name, handleRegister],
+  [unregisterCommand.name, handleUnregister],
+  [createCommand.name, handleCreate],
+  [teamCommand.name, handleTeam],
+  [projectsCommand.name, handleProjects],
+  [groupCommand.name, handleGroup],
+  [joinCommand.name, handleJoin],
+  [kickCommand.name, handleKick],
+  [leaveCommand.name, handleLeave],
+  [manageCommand.name, handleManage],
+  [githubCommand.name, handleGithub],
+  [whoisCommand.name, handleWhois],
+  [disableCommand.name, handleDisable],
+  [enableCommand.name, handleEnable],
+  [purgeCommand.name, handlePurge],
+  [adminCommand.name, handleAdmin]
 ]);

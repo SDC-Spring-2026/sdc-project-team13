@@ -25,4 +25,3 @@ export const db_bot_config: DatabaseBotConfigManager = {
     );
   }
 };
-

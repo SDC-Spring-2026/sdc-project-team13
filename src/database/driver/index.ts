@@ -32,6 +32,7 @@ export async function getDriver(): Promise<Driver> {
 
 /** Synchronous accessor — only valid after the first `getDriver()` call. */
 export function driver(): Driver {
-  if (!_driver) throw new Error("Driver not yet initialised. Call getDriver() first.");
+  if (!_driver)
+    throw new Error("Driver not yet initialised. Call getDriver() first.");
   return _driver;
 }

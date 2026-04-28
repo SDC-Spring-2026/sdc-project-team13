@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Wrench } from "lucide-react";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
@@ -93,11 +99,18 @@ export function AdminTools() {
       <Card>
         <CardHeader>
           <CardTitle>Diagnostics</CardTitle>
-          <CardDescription>Server-side checks for env + DB connectivity.</CardDescription>
+          <CardDescription>
+            Server-side checks for env + DB connectivity.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" className="h-9" onClick={() => void loadDiag()} disabled={diagLoading}>
+            <Button
+              variant="outline"
+              className="h-9"
+              onClick={() => void loadDiag()}
+              disabled={diagLoading}
+            >
               {diagLoading ? "Checking…" : "Re-run"}
             </Button>
           </div>
@@ -115,11 +128,17 @@ export function AdminTools() {
                 Signed in: <span className="font-mono">{diag.userId}</span>
               </div>
               <div className="mt-1 text-muted-foreground">
-                Admin flags: {diag.isAdmin ? "admin" : "—"} {diag.isPresident ? "president" : "—"}
+                Admin flags: {diag.isAdmin ? "admin" : "—"}{" "}
+                {diag.isPresident ? "president" : "—"}
               </div>
               {diag.missing?.length ? (
                 <div className="mt-2 text-muted-foreground">
-                  Missing: {diag.missing.map((m) => <code key={m} className="ml-1">{m}</code>)}
+                  Missing:{" "}
+                  {diag.missing.map((m) => (
+                    <code key={m} className="ml-1">
+                      {m}
+                    </code>
+                  ))}
                 </div>
               ) : null}
             </div>
@@ -134,33 +153,52 @@ export function AdminTools() {
             DB repair (safe)
           </CardTitle>
           <CardDescription>
-            Fixes a few consistency issues in the database only (no Discord/GitHub side-effects).
+            Fixes a few consistency issues in the database only (no
+            Discord/GitHub side-effects).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button variant="outline" className="h-9" onClick={() => void runRepair()} disabled={repairLoading}>
+          <Button
+            variant="outline"
+            className="h-9"
+            onClick={() => void runRepair()}
+            disabled={repairLoading}
+          >
             {repairLoading ? "Repairing…" : "Run repair"}
           </Button>
           {repair ? (
             <div className="rounded-lg border bg-muted/20 p-3 text-sm text-muted-foreground">
               <div>
-                Scanned teams: <span className="font-medium text-foreground">{repair.scannedTeams}</span>
+                Scanned teams:{" "}
+                <span className="font-medium text-foreground">
+                  {repair.scannedTeams}
+                </span>
               </div>
               <div>
-                Fixed missing leaders: <span className="font-medium text-foreground">{repair.fixedLeaderTeams}</span>
+                Fixed missing leaders:{" "}
+                <span className="font-medium text-foreground">
+                  {repair.fixedLeaderTeams}
+                </span>
               </div>
               <div>
-                Fixed inactive-but-mapped teams: <span className="font-medium text-foreground">{repair.fixedActiveFlagTeams}</span>
+                Fixed inactive-but-mapped teams:{" "}
+                <span className="font-medium text-foreground">
+                  {repair.fixedActiveFlagTeams}
+                </span>
               </div>
               {repair.notes?.length ? (
                 <>
                   <Separator className="my-3" />
                   <div className="space-y-1">
                     {repair.notes.slice(0, 8).map((n, i) => (
-                      <div key={i} className="font-mono text-xs">{n}</div>
+                      <div key={i} className="font-mono text-xs">
+                        {n}
+                      </div>
                     ))}
                     {repair.notes.length > 8 ? (
-                      <div className="text-xs">…and {repair.notes.length - 8} more</div>
+                      <div className="text-xs">
+                        …and {repair.notes.length - 8} more
+                      </div>
                     ) : null}
                   </div>
                 </>
@@ -174,7 +212,8 @@ export function AdminTools() {
         <CardHeader>
           <CardTitle>Audit log channel</CardTitle>
           <CardDescription>
-            Stored in DB (`botConfig`). The bot will post admin actions here when configured.
+            Stored in DB (`botConfig`). The bot will post admin actions here
+            when configured.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -188,10 +227,19 @@ export function AdminTools() {
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="h-9" onClick={() => void loadAudit()} disabled={auditLoading}>
+            <Button
+              variant="outline"
+              className="h-9"
+              onClick={() => void loadAudit()}
+              disabled={auditLoading}
+            >
               Refresh
             </Button>
-            <Button className="h-9" onClick={() => void saveAudit()} disabled={auditLoading}>
+            <Button
+              className="h-9"
+              onClick={() => void saveAudit()}
+              disabled={auditLoading}
+            >
               Save
             </Button>
             <Button
@@ -204,11 +252,11 @@ export function AdminTools() {
             </Button>
           </div>
           <div className="text-xs text-muted-foreground">
-            Tip: easiest is to run `/admin audit_log set` in Discord; this UI is a fallback.
+            Tip: easiest is to run `/admin audit_log set` in Discord; this UI is
+            a fallback.
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-

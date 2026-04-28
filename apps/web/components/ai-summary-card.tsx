@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Sparkles, Square } from "lucide-react";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "./ui/card";
 import { Separator } from "./ui/separator";
 import { Markdown } from "./markdown";
 import { StreamingBar } from "./ui/streaming-bar";
@@ -41,7 +47,12 @@ function parseRetryAfterSeconds(txt: string): number | null {
   return null;
 }
 
-export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compactHeader = true }: Props) {
+export function AiSummaryCard({
+  teamSlug,
+  auto = true,
+  embedded = false,
+  compactHeader = true
+}: Props) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ApiResp | null>(null);
   const [streamText, setStreamText] = useState<string>("");
@@ -99,17 +110,27 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
             parseRetryAfterSeconds(txt) ||
             30;
           setCooldownUntilMs(Date.now() + retryAfter * 1000);
-          setData({ error: `Rate limited (429). Please retry in ~${retryAfter}s.` });
+          setData({
+            error: `Rate limited (429). Please retry in ~${retryAfter}s.`
+          });
           return;
         }
-        setData({ error: `AI summary failed (${r.status}): ${txt.slice(0, 500)}` });
+        setData({
+          error: `AI summary failed (${r.status}): ${txt.slice(0, 500)}`
+        });
         return;
       }
 
       const ct = r.headers.get("content-type") ?? "";
       if (!ct.includes("text/event-stream") || !r.body) {
         // Fallback: JSON
-        const j = (await r.json()) as { summary?: string; generatedAt?: string; model?: string; teamSlug?: string; error?: string };
+        const j = (await r.json()) as {
+          summary?: string;
+          generatedAt?: string;
+          model?: string;
+          teamSlug?: string;
+          error?: string;
+        };
         if (j?.error) setData({ error: j.error });
         else {
           setData({
@@ -143,19 +164,32 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
           buf = buf.slice(idx + 2);
 
           const lines = raw.split("\n");
-          const ev = lines.find((l) => l.startsWith("event:"))?.slice("event:".length).trim() ?? "message";
-          const dataLine = lines.find((l) => l.startsWith("data:"))?.slice("data:".length).trim() ?? "";
+          const ev =
+            lines
+              .find((l) => l.startsWith("event:"))
+              ?.slice("event:".length)
+              .trim() ?? "message";
+          const dataLine =
+            lines
+              .find((l) => l.startsWith("data:"))
+              ?.slice("data:".length)
+              .trim() ?? "";
           const payload = safeJsonParse(dataLine);
 
           if (ev === "meta" && isRecord(payload)) {
             localMeta = {
-              generatedAt: String(payload.generatedAt ?? new Date().toISOString()),
+              generatedAt: String(
+                payload.generatedAt ?? new Date().toISOString()
+              ),
               model: String(payload.model ?? "unknown"),
               teamSlug: String(payload.teamSlug ?? teamSlug)
             };
             setMeta(localMeta);
           } else if (ev === "delta") {
-            const delta = isRecord(payload) && typeof payload.delta === "string" ? payload.delta : "";
+            const delta =
+              isRecord(payload) && typeof payload.delta === "string"
+                ? payload.delta
+                : "";
             if (delta) {
               full += delta;
               setStreamText(full);
@@ -251,9 +285,17 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
             className="h-9"
             onClick={() => void run()}
             disabled={loading || cooldownLeftSeconds > 0}
-            title={cooldownLeftSeconds > 0 ? `Rate limited. Try again in ~${cooldownLeftSeconds}s.` : "Generate"}
+            title={
+              cooldownLeftSeconds > 0
+                ? `Rate limited. Try again in ~${cooldownLeftSeconds}s.`
+                : "Generate"
+            }
           >
-            {loading ? "Generating…" : cooldownLeftSeconds > 0 ? `Retry in ${cooldownLeftSeconds}s` : "Refresh"}
+            {loading
+              ? "Generating…"
+              : cooldownLeftSeconds > 0
+                ? `Retry in ${cooldownLeftSeconds}s`
+                : "Refresh"}
           </Button>
         </div>
       </div>
@@ -279,51 +321,38 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
       ) : null}
 
       {!data && !streamText && !loading && (
-          <div className="text-sm text-muted-foreground">
-            Click generate to summarize recent saved messages.
-          </div>
-        )}
+        <div className="text-sm text-muted-foreground">
+          Click generate to summarize recent saved messages.
+        </div>
+      )}
 
       {data && "error" in data && (
-          <div className="rounded-lg border bg-muted/20 p-3 text-sm text-muted-foreground">
-            {data.error}
-          </div>
-        )}
+        <div className="rounded-lg border bg-muted/20 p-3 text-sm text-muted-foreground">
+          {data.error}
+        </div>
+      )}
 
       {canShow && (
-          <div className="space-y-2">
-            {!embedded ? (
-              <>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-xs text-muted-foreground">
-                    {shownMeta ? (
-                      <>
-                        {new Date(shownMeta.generatedAt).toLocaleString()} •{" "}
-                        {shownMeta.model}
-                      </>
-                    ) : (
-                      "Generating…"
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    className="h-8 px-2"
-                    onClick={() => void navigator.clipboard.writeText(shownSummary)}
-                    disabled={!shownSummary.trim()}
-                    title="Copy summary"
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span className="hidden sm:inline">Copy</span>
-                  </Button>
+        <div className="space-y-2">
+          {!embedded ? (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs text-muted-foreground">
+                  {shownMeta ? (
+                    <>
+                      {new Date(shownMeta.generatedAt).toLocaleString()} •{" "}
+                      {shownMeta.model}
+                    </>
+                  ) : (
+                    "Generating…"
+                  )}
                 </div>
-                <Separator />
-              </>
-            ) : (
-              <div className="flex justify-end">
                 <Button
                   variant="ghost"
                   className="h-8 px-2"
-                  onClick={() => void navigator.clipboard.writeText(shownSummary)}
+                  onClick={() =>
+                    void navigator.clipboard.writeText(shownSummary)
+                  }
                   disabled={!shownSummary.trim()}
                   title="Copy summary"
                 >
@@ -331,14 +360,34 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
                   <span className="hidden sm:inline">Copy</span>
                 </Button>
               </div>
-            )}
-            <div className="relative rounded-xl border bg-background/40 p-3">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-              <StreamingBar active={loading && Boolean(streamText)} className="mb-3" />
-              <Markdown streaming={loading && Boolean(streamText)}>{shownSummary}</Markdown>
+              <Separator />
+            </>
+          ) : (
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                className="h-8 px-2"
+                onClick={() => void navigator.clipboard.writeText(shownSummary)}
+                disabled={!shownSummary.trim()}
+                title="Copy summary"
+              >
+                <Copy className="h-4 w-4" />
+                <span className="hidden sm:inline">Copy</span>
+              </Button>
             </div>
+          )}
+          <div className="relative rounded-xl border bg-background/40 p-3">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+            <StreamingBar
+              active={loading && Boolean(streamText)}
+              className="mb-3"
+            />
+            <Markdown streaming={loading && Boolean(streamText)}>
+              {shownSummary}
+            </Markdown>
           </div>
-        )}
+        </div>
+      )}
     </>
   );
 
@@ -359,4 +408,3 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
     </Card>
   );
 }
-

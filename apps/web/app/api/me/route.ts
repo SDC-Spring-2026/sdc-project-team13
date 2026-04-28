@@ -17,7 +17,9 @@ export async function GET() {
         `SELECT discord, github FROM ${tbl("members")} WHERE discord = $1 LIMIT 1`,
         [userId]
       );
-      const row = r.rows[0] as { discord: string; github: string | null } | undefined;
+      const row = r.rows[0] as
+        | { discord: string; github: string | null }
+        | undefined;
       return NextResponse.json({
         discordId: userId,
         github: row?.github ?? null,
@@ -26,7 +28,9 @@ export async function GET() {
     }
 
     const row = conn.db
-      .prepare(`SELECT discord, github FROM ${tbl("members")} WHERE discord = ? LIMIT 1`)
+      .prepare(
+        `SELECT discord, github FROM ${tbl("members")} WHERE discord = ? LIMIT 1`
+      )
       .get(userId) as { discord: string; github: string | null } | undefined;
     return NextResponse.json({
       discordId: userId,
@@ -38,4 +42,3 @@ export async function GET() {
     else conn.close();
   }
 }
-

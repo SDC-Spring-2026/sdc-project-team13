@@ -58,41 +58,41 @@ yarn dev:register
 
 ## Running
 
-| Script | What it does |
-| ------ | ------------ |
-| `yarn dev:bot` | Bot in watch mode |
-| `yarn dev:web` | Next.js frontend at [localhost:3000](http://localhost:3000) |
-| `yarn dev` | ESLint + bot + web, all in parallel |
-| `yarn dev:bot:once` | Bot, single run (no watch) |
-| `yarn build && yarn start` | Production build and start |
+| Script                     | What it does                                                |
+| -------------------------- | ----------------------------------------------------------- |
+| `yarn dev:bot`             | Bot in watch mode                                           |
+| `yarn dev:web`             | Next.js frontend at [localhost:3000](http://localhost:3000) |
+| `yarn dev`                 | ESLint + bot + web, all in parallel                         |
+| `yarn dev:bot:once`        | Bot, single run (no watch)                                  |
+| `yarn build && yarn start` | Production build and start                                  |
 
 ## Commands
 
 ### Member commands
 
-| Command | Description |
-| ------- | ----------- |
-| `/register <github>` | Link your Discord account to a GitHub username. Required before any team commands. |
-| `/unregister` | Unlink your GitHub account from your Discord. |
-| `/whois <member>` | Look up a member's linked GitHub and team info. |
-| `/create <project> <description>` | Create a new project group. Provisions a Discord channel + role + private GitHub repo (all named after the team slug). You become the leader. |
-| `/join <group>` | Request to join a group. A button is posted in the team channel; only the leader can accept (valid for 3 days). |
-| `/leave <group>` | Leave a group you are currently a member of. |
-| `/kick <group> <member>` | Remove a member from a team and revoke their GitHub repo access (leader only). |
-| `/team` | Show an overview of your current team. |
-| `/group <group>` | List all members of a group. |
-| `/projects` | List all active project groups in the server. |
-| `/manage <project> <description>` | Update a project's description and channel topic (leader only). |
-| `/github repo <target>` | Repo info — stars, forks, language, latest commit. |
-| `/github commits <target> [branch] [limit]` | Recent commits (1–20, default 5). |
+| Command                                     | Description                                                                                                                                   |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/register <github>`                        | Link your Discord account to a GitHub username. Required before any team commands.                                                            |
+| `/unregister`                               | Unlink your GitHub account from your Discord.                                                                                                 |
+| `/whois <member>`                           | Look up a member's linked GitHub and team info.                                                                                               |
+| `/create <project> <description>`           | Create a new project group. Provisions a Discord channel + role + private GitHub repo (all named after the team slug). You become the leader. |
+| `/join <group>`                             | Request to join a group. A button is posted in the team channel; only the leader can accept (valid for 3 days).                               |
+| `/leave <group>`                            | Leave a group you are currently a member of.                                                                                                  |
+| `/kick <group> <member>`                    | Remove a member from a team and revoke their GitHub repo access (leader only).                                                                |
+| `/team`                                     | Show an overview of your current team.                                                                                                        |
+| `/group <group>`                            | List all members of a group.                                                                                                                  |
+| `/projects`                                 | List all active project groups in the server.                                                                                                 |
+| `/manage <project> <description>`           | Update a project's description and channel topic (leader only).                                                                               |
+| `/github repo <target>`                     | Repo info — stars, forks, language, latest commit.                                                                                            |
+| `/github commits <target> [branch] [limit]` | Recent commits (1–20, default 5).                                                                                                             |
 
 ### Admin commands
 
-| Command | Description |
-| ------- | ----------- |
-| `/disable <group>` | Hide a team's channel and archive its GitHub repo. |
-| `/enable <group>` | Restore a disabled team's channel and unarchive its GitHub repo. |
-| `/purge <group>` | Permanently delete a team's channel, role, and GitHub repo. Team must be disabled first. |
+| Command            | Description                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| `/disable <group>` | Hide a team's channel and archive its GitHub repo.                                       |
+| `/enable <group>`  | Restore a disabled team's channel and unarchive its GitHub repo.                         |
+| `/purge <group>`   | Permanently delete a team's channel, role, and GitHub repo. Team must be disabled first. |
 
 ### Team slugs
 
@@ -138,30 +138,30 @@ apps/
 
 ## Troubleshooting
 
-| Problem | Fix |
-| ------- | --- |
-| Commands not showing | Run `yarn dev:setup` or `yarn dev:register`; check `GUILD_ID`; confirm bot is in the guild. |
-| DB errors on first run | Run `yarn dev:setup` once to run migrations. |
-| AI not replying to pings | Set `GEMINI_API_KEY`; enable **Message Content Intent** on the bot; confirm the bot can read and send messages in the channel. |
-| `.env` not loading | Scripts use `--env-file=.env`; make sure the file exists at the repo root. |
-| GitHub repo not created | Set `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_ORG`; ensure the GitHub App is installed on the org with **Repository** read/write permissions. |
-| "GitHub App is not installed on org" | GitHub App settings → Install App → select the org. |
-| `/purge` fails to delete repo | Grant the GitHub App the **"Delete repositories"** permission (separate from read/write) in its settings. |
-| Collaborator not added/removed | The member must have run `/register` so their GitHub username is on file. |
+| Problem                              | Fix                                                                                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Commands not showing                 | Run `yarn dev:setup` or `yarn dev:register`; check `GUILD_ID`; confirm bot is in the guild.                                                            |
+| DB errors on first run               | Run `yarn dev:setup` once to run migrations.                                                                                                           |
+| AI not replying to pings             | Set `GEMINI_API_KEY`; enable **Message Content Intent** on the bot; confirm the bot can read and send messages in the channel.                         |
+| `.env` not loading                   | Scripts use `--env-file=.env`; make sure the file exists at the repo root.                                                                             |
+| GitHub repo not created              | Set `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_ORG`; ensure the GitHub App is installed on the org with **Repository** read/write permissions. |
+| "GitHub App is not installed on org" | GitHub App settings → Install App → select the org.                                                                                                    |
+| `/purge` fails to delete repo        | Grant the GitHub App the **"Delete repositories"** permission (separate from read/write) in its settings.                                              |
+| Collaborator not added/removed       | The member must have run `/register` so their GitHub username is on file.                                                                              |
 
 ## Tech stack
 
-| Area | Stack |
-| ---- | ----- |
-| Runtime | Node.js v22 LTS |
-| Language | TypeScript 5 |
-| Discord | Discord.js v14 |
+| Area     | Stack                                             |
+| -------- | ------------------------------------------------- |
+| Runtime  | Node.js v22 LTS                                   |
+| Language | TypeScript 5                                      |
+| Discord  | Discord.js v14                                    |
 | Database | better-sqlite3 (dev) · PostgreSQL via `pg` (prod) |
-| AI | @google/genai (Gemini) |
-| GitHub | Octokit REST · GitHub App (octokit) |
-| Web | Next.js 16 · React 19 |
-| Logging | Winston + winston-daily-rotate-file |
-| Tooling | Yarn 4 · tsx · ESLint · Prettier |
+| AI       | @google/genai (Gemini)                            |
+| GitHub   | Octokit REST · GitHub App (octokit)               |
+| Web      | Next.js 16 · React 19                             |
+| Logging  | Winston + winston-daily-rotate-file               |
+| Tooling  | Yarn 4 · tsx · ESLint · Prettier                  |
 
 ## Contributing
 

@@ -91,7 +91,10 @@ async function handleDescription(interaction: ChatInputCommandInteraction) {
   const guild = interaction.guild;
 
   if (!guild) {
-    await interaction.reply({ flags: MessageFlags.Ephemeral, content: "This command can only be used in a server!" });
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "This command can only be used in a server!"
+    });
     return;
   }
 
@@ -99,12 +102,21 @@ async function handleDescription(interaction: ChatInputCommandInteraction) {
 
   const teamSlug = await resolveTeamSlug(guild, formattedProject);
   if (!teamSlug) {
-    await interaction.reply({ flags: MessageFlags.Ephemeral, content: `No group found named **${project}**.` });
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: `No group found named **${project}**.`
+    });
     return;
   }
 
-  if (!isGuildAdmin(interaction) && !(await db.isTeamLeader(teamSlug, interaction.user.id))) {
-    await interaction.reply({ flags: MessageFlags.Ephemeral, content: "Only the team leader can modify this project." });
+  if (
+    !isGuildAdmin(interaction) &&
+    !(await db.isTeamLeader(teamSlug, interaction.user.id))
+  ) {
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "Only the team leader can modify this project."
+    });
     return;
   }
 
@@ -117,7 +129,9 @@ async function handleDescription(interaction: ChatInputCommandInteraction) {
       (await db.getPrimaryActiveProjectForTeam(teamSlug));
 
     if (!existing) {
-      await interaction.editReply(`No project row found for team **${teamSlug}**. Create one with /create first.`);
+      await interaction.editReply(
+        `No project row found for team **${teamSlug}**. Create one with /create first.`
+      );
       return;
     }
 
@@ -125,16 +139,22 @@ async function handleDescription(interaction: ChatInputCommandInteraction) {
 
     const targetCompact = formattedProject.replace(/\s+/g, "").toLowerCase();
     const channel = guild.channels.cache.find(
-      (c) => c.isTextBased() && c.name.replace(/\s+/g, "").toLowerCase() === targetCompact
+      (c) =>
+        c.isTextBased() &&
+        c.name.replace(/\s+/g, "").toLowerCase() === targetCompact
     );
     if (channel && channel.isTextBased() && "setTopic" in channel) {
       await channel.setTopic(description);
     }
 
-    logger.info(`Project "${project}" description updated by ${interaction.user.tag}`);
+    logger.info(
+      `Project "${project}" description updated by ${interaction.user.tag}`
+    );
     await interaction.editReply(`✅ **${project}** updated!`);
   } catch (err) {
-    logger.error(`Failed to update project "${project}" for ${interaction.user.tag}: ${err instanceof Error ? err.message : String(err)}`);
+    logger.error(
+      `Failed to update project "${project}" for ${interaction.user.tag}: ${err instanceof Error ? err.message : String(err)}`
+    );
     await interaction.editReply("Failed to update project.");
   }
 }
@@ -145,7 +165,10 @@ async function handleRename(interaction: ChatInputCommandInteraction) {
   const guild = interaction.guild;
 
   if (!guild) {
-    await interaction.reply({ flags: MessageFlags.Ephemeral, content: "This command can only be used in a server!" });
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "This command can only be used in a server!"
+    });
     return;
   }
 
@@ -154,12 +177,21 @@ async function handleRename(interaction: ChatInputCommandInteraction) {
   const formattedGroup = group.toLowerCase().replace(/\s+/g, "-");
   const teamSlug = await resolveTeamSlug(guild, formattedGroup);
   if (!teamSlug) {
-    await interaction.reply({ flags: MessageFlags.Ephemeral, content: `No group called **${group}** found.` });
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: `No group called **${group}** found.`
+    });
     return;
   }
 
-  if (!isGuildAdmin(interaction) && !(await db.isTeamLeader(teamSlug, interaction.user.id))) {
-    await interaction.reply({ flags: MessageFlags.Ephemeral, content: "Only the team leader can rename the project." });
+  if (
+    !isGuildAdmin(interaction) &&
+    !(await db.isTeamLeader(teamSlug, interaction.user.id))
+  ) {
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "Only the team leader can rename the project."
+    });
     return;
   }
 
@@ -175,10 +207,16 @@ async function handleRename(interaction: ChatInputCommandInteraction) {
     const oldName = project.name;
     await db.changeProjectDisplayName(project.slug, name);
 
-    logger.info(`Project "${oldName}" (team: ${teamSlug}) renamed to "${name}" by ${interaction.user.tag}`);
-    await interaction.editReply(`✅ Project renamed from **${oldName}** to **${name}**.`);
+    logger.info(
+      `Project "${oldName}" (team: ${teamSlug}) renamed to "${name}" by ${interaction.user.tag}`
+    );
+    await interaction.editReply(
+      `✅ Project renamed from **${oldName}** to **${name}**.`
+    );
   } catch (err) {
-    logger.error(`Failed to rename project for ${interaction.user.tag}: ${err instanceof Error ? err.message : String(err)}`);
+    logger.error(
+      `Failed to rename project for ${interaction.user.tag}: ${err instanceof Error ? err.message : String(err)}`
+    );
     await interaction.editReply("Failed to rename project.");
   }
 }
@@ -189,14 +227,20 @@ async function handleTransfer(interaction: ChatInputCommandInteraction) {
   const guild = interaction.guild;
 
   if (!guild) {
-    await interaction.reply({ flags: MessageFlags.Ephemeral, content: "This command can only be used in a server!" });
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "This command can only be used in a server!"
+    });
     return;
   }
 
   if (!(await requireRegistered(interaction))) return;
 
   if (target.id === interaction.user.id) {
-    await interaction.reply({ flags: MessageFlags.Ephemeral, content: "You are already the leader." });
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "You are already the leader."
+    });
     return;
   }
 
@@ -204,18 +248,30 @@ async function handleTransfer(interaction: ChatInputCommandInteraction) {
 
   const teamSlug = await resolveTeamSlug(guild, formattedGroup);
   if (!teamSlug) {
-    await interaction.reply({ flags: MessageFlags.Ephemeral, content: `No group called **${group}** found.` });
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: `No group called **${group}** found.`
+    });
     return;
   }
 
-  if (!isGuildAdmin(interaction) && !(await db.isTeamLeader(teamSlug, interaction.user.id))) {
-    await interaction.reply({ flags: MessageFlags.Ephemeral, content: "Only the team leader can transfer leadership." });
+  if (
+    !isGuildAdmin(interaction) &&
+    !(await db.isTeamLeader(teamSlug, interaction.user.id))
+  ) {
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: "Only the team leader can transfer leadership."
+    });
     return;
   }
 
   const targetPerm = await db.getMemberTeamPermission(teamSlug, target.id);
   if (targetPerm === null) {
-    await interaction.reply({ flags: MessageFlags.Ephemeral, content: `**${target.username}** is not a member of **${group}**.` });
+    await interaction.reply({
+      flags: MessageFlags.Ephemeral,
+      content: `**${target.username}** is not a member of **${group}**.`
+    });
     return;
   }
 
@@ -224,15 +280,30 @@ async function handleTransfer(interaction: ChatInputCommandInteraction) {
   try {
     await db.updateTeamMember(teamSlug, target.id, TeamPermissionLevel.LEADER);
     // Only step down if the caller was actually the leader
-    const callerPerm = await db.getMemberTeamPermission(teamSlug, interaction.user.id);
+    const callerPerm = await db.getMemberTeamPermission(
+      teamSlug,
+      interaction.user.id
+    );
     if (callerPerm === TeamPermissionLevel.LEADER) {
-      await db.updateTeamMember(teamSlug, interaction.user.id, TeamPermissionLevel.MEMBER);
+      await db.updateTeamMember(
+        teamSlug,
+        interaction.user.id,
+        TeamPermissionLevel.MEMBER
+      );
     }
 
-    logger.info(`Leadership of "${group}" (team: ${teamSlug}) transferred from ${interaction.user.tag} to ${target.tag}`);
-    await interaction.editReply(`✅ Leadership of **${group}** transferred to **${target.username}**.`);
+    logger.info(
+      `Leadership of "${group}" (team: ${teamSlug}) transferred from ${interaction.user.tag} to ${target.tag}`
+    );
+    await interaction.editReply(
+      `✅ Leadership of **${group}** transferred to **${target.username}**.`
+    );
   } catch (err) {
-    logger.error(`Failed to transfer leadership of "${group}" from ${interaction.user.tag} to ${target.tag}: ${err instanceof Error ? err.message : String(err)}`);
-    await interaction.editReply("Failed to transfer leadership. Please try again or contact a server admin.");
+    logger.error(
+      `Failed to transfer leadership of "${group}" from ${interaction.user.tag} to ${target.tag}: ${err instanceof Error ? err.message : String(err)}`
+    );
+    await interaction.editReply(
+      "Failed to transfer leadership. Please try again or contact a server admin."
+    );
   }
 }

@@ -1,6 +1,11 @@
 import { loadEnvConfig } from "@next/env";
 import { NextResponse } from "next/server";
-import { ensureWebSessionTable, insertSession, newSessionToken, openWebDb } from "../../../../../lib/webDb";
+import {
+  ensureWebSessionTable,
+  insertSession,
+  newSessionToken,
+  openWebDb
+} from "../../../../../lib/webDb";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +52,10 @@ export async function GET(request: Request) {
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
     return NextResponse.json(
-      { error: "Missing DISCORD_CLIENT_ID/CLIENT_ID or DISCORD_CLIENT_SECRET in env." },
+      {
+        error:
+          "Missing DISCORD_CLIENT_ID/CLIENT_ID or DISCORD_CLIENT_SECRET in env."
+      },
       { status: 500 }
     );
   }
@@ -71,27 +79,38 @@ export async function GET(request: Request) {
   if (!tokenRes.ok) {
     const txt = await tokenRes.text().catch(() => "");
     return NextResponse.json(
-      { error: `Discord token exchange failed (${tokenRes.status})`, detail: txt.slice(0, 500) },
+      {
+        error: `Discord token exchange failed (${tokenRes.status})`,
+        detail: txt.slice(0, 500)
+      },
       { status: 400 }
     );
   }
 
   const tokenJson = (await tokenRes.json()) as DiscordTokenResponse;
   const userRes = await fetch("https://discord.com/api/users/@me", {
-    headers: { authorization: `${tokenJson.token_type} ${tokenJson.access_token}` }
+    headers: {
+      authorization: `${tokenJson.token_type} ${tokenJson.access_token}`
+    }
   });
 
   if (!userRes.ok) {
     const txt = await userRes.text().catch(() => "");
     return NextResponse.json(
-      { error: `Discord user fetch failed (${userRes.status})`, detail: txt.slice(0, 500) },
+      {
+        error: `Discord user fetch failed (${userRes.status})`,
+        detail: txt.slice(0, 500)
+      },
       { status: 400 }
     );
   }
 
   const user = (await userRes.json()) as DiscordUser;
   if (!user?.id) {
-    return NextResponse.json({ error: "Discord user payload missing id." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Discord user payload missing id." },
+      { status: 400 }
+    );
   }
 
   const conn = openWebDb();
@@ -117,4 +136,3 @@ export async function GET(request: Request) {
     else conn.close();
   }
 }
-

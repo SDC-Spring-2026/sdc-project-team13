@@ -1,6 +1,10 @@
 import { Pool } from "pg";
 import { dbLogger as logger } from "..";
-import { alreadyClosedError, alreadyOpenError, noOpWhileClosedError } from "../errors";
+import {
+  alreadyClosedError,
+  alreadyOpenError,
+  noOpWhileClosedError
+} from "../errors";
 import { tbl } from "../physicalTables";
 import { Driver } from ".";
 
@@ -18,7 +22,10 @@ export const postgresDriver: Driver = {
 
   getRawDBInstance: () => pool,
 
-  async query<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
+  async query<T = Record<string, unknown>>(
+    sql: string,
+    params: unknown[] = []
+  ): Promise<T[]> {
     const result = await pool.query(pgSQL(sql), params);
     return result.rows as T[];
   },
@@ -97,9 +104,7 @@ export const postgresDriver: Driver = {
       )
     `);
 
-    await pool.query(
-      `ALTER TABLE ${T} ADD COLUMN IF NOT EXISTS role_id TEXT`
-    );
+    await pool.query(`ALTER TABLE ${T} ADD COLUMN IF NOT EXISTS role_id TEXT`);
     await pool.query(
       `ALTER TABLE ${T} ADD COLUMN IF NOT EXISTS channel_id TEXT`
     );

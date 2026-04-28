@@ -5,10 +5,15 @@ export const metadata = {
     default: "SDC Cache",
     template: "%s • SDC Cache"
   },
-  description: "SDC Cache — a dashboard for Software Development Club teams and projects."
+  description:
+    "SDC Cache — a dashboard for Software Development Club teams and projects."
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -35,4 +40,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-

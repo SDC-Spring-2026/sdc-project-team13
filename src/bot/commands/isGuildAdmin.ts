@@ -8,5 +8,8 @@ import { BaseInteraction, PermissionFlagsBits } from "discord.js";
 export function isGuildAdmin(interaction: BaseInteraction): boolean {
   if (!interaction.guild) return false;
   if (interaction.guild.ownerId === interaction.user.id) return true;
-  return interaction.memberPermissions?.has(PermissionFlagsBits.Administrator) ?? false;
+  return (
+    interaction.memberPermissions?.has(PermissionFlagsBits.Administrator) ??
+    false
+  );
 }

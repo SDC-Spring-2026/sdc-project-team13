@@ -37,8 +37,9 @@ export default function HomePage() {
                 <span className="text-primary"> organized.</span>
               </h1>
               <p className="mt-4 max-w-xl text-pretty text-base text-muted-foreground">
-                Sign in with Discord to see your team dashboards, AI summaries, and
-                project activity—all permission-aware and built for SDC workflows.
+                Sign in with Discord to see your team dashboards, AI summaries,
+                and project activity—all permission-aware and built for SDC
+                workflows.
               </p>
             </div>
 
@@ -58,11 +59,13 @@ export default function HomePage() {
                     Permission-aware
                   </CardTitle>
                   <CardDescription>
-                    Only see what you’re allowed to see—mirrors team membership and roles.
+                    Only see what you’re allowed to see—mirrors team membership
+                    and roles.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground">
-                  Admin-only tooling stays admin-only. No raw IDs or message history exposed in the normal UI.
+                  Admin-only tooling stays admin-only. No raw IDs or message
+                  history exposed in the normal UI.
                 </CardContent>
               </Card>
 
@@ -77,7 +80,8 @@ export default function HomePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground">
-                  Summaries are generated from saved context server-side—clean output, fast iteration.
+                  Summaries are generated from saved context server-side—clean
+                  output, fast iteration.
                 </CardContent>
               </Card>
             </div>
@@ -88,13 +92,18 @@ export default function HomePage() {
               <CardHeader>
                 <CardTitle>Sign in</CardTitle>
                 <CardDescription>
-                  Uses Discord OAuth (<code className="rounded bg-muted px-1.5 py-0.5">identify</code>)
-                  and stores a server session cookie.
+                  Uses Discord OAuth (
+                  <code className="rounded bg-muted px-1.5 py-0.5">
+                    identify
+                  </code>
+                  ) and stores a server session cookie.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-muted-foreground">
                 <div>
-                  <div className="font-medium text-foreground">What you’ll get</div>
+                  <div className="font-medium text-foreground">
+                    What you’ll get
+                  </div>
                   <ul className="mt-2 list-disc space-y-1 pl-5">
                     <li>Team dashboards</li>
                     <li>Auto AI summary (markdown)</li>
@@ -102,7 +111,10 @@ export default function HomePage() {
                   </ul>
                 </div>
                 <div className="rounded-md border bg-muted/30 p-3">
-                  If Discord name isn’t showing, set <code className="rounded bg-muted px-1.5 py-0.5">DISCORD_GUILD_ID</code>{" "}
+                  If Discord name isn’t showing, set{" "}
+                  <code className="rounded bg-muted px-1.5 py-0.5">
+                    DISCORD_GUILD_ID
+                  </code>{" "}
                   and ensure the bot token can read member info.
                 </div>
               </CardContent>
@@ -116,11 +128,13 @@ export default function HomePage() {
         </section>
 
         <footer className="mt-auto pt-10 text-xs text-muted-foreground">
-          Tip: In production, keep <code className="rounded bg-muted px-1.5 py-0.5">ALLOW_DB_INSPECTOR</code>{" "}
+          Tip: In production, keep{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5">
+            ALLOW_DB_INSPECTOR
+          </code>{" "}
           off unless you explicitly need it.
         </footer>
       </div>
     </main>
   );
 }
-

@@ -13,10 +13,9 @@ async function main() {
 
   const rest = new REST({ version: "10" }).setToken(token);
 
-  await rest.put(
-    Routes.applicationGuildCommands(clientId, guildId),
-    { body: commandDefinitions }
-  );
+  await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+    body: commandDefinitions
+  });
 
   console.log("Successfully registered guild commands for dev environment :)");
 }

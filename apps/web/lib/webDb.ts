@@ -5,7 +5,11 @@ import { Pool } from "pg";
 
 export type DbDriver = "postgres" | "sqlite";
 
-type SqliteConn = { driver: "sqlite"; db: Database.Database; close: () => void };
+type SqliteConn = {
+  driver: "sqlite";
+  db: Database.Database;
+  close: () => void;
+};
 type PgConn = { driver: "postgres"; pool: Pool; close: () => Promise<void> };
 
 export type WebDbConn = SqliteConn | PgConn;
@@ -27,7 +31,9 @@ function webSessionTableName(): string {
     (process.env.CACHE_DB_USE_ISOLATED_TABLES === "1"
       ? process.env.CACHE_DB_ISOLATED_PREFIX?.trim() || "cache_team13"
       : "");
-  const safe = (prefix ?? "").trim().match(/^[a-zA-Z][a-zA-Z0-9_]*$/) ? prefix!.trim() : "";
+  const safe = (prefix ?? "").trim().match(/^[a-zA-Z][a-zA-Z0-9_]*$/)
+    ? prefix!.trim()
+    : "";
   const base = "websessions";
   if (!safe) return base;
   return `${safe}_${base}`;
@@ -92,7 +98,10 @@ export async function insertSession(
     );
 }
 
-export async function deleteSession(conn: WebDbConn, tokenHash: string): Promise<void> {
+export async function deleteSession(
+  conn: WebDbConn,
+  tokenHash: string
+): Promise<void> {
   const table = webSessionTableName();
   if (conn.driver === "postgres") {
     await conn.pool.query(`DELETE FROM ${table} WHERE id = $1`, [tokenHash]);
@@ -111,14 +120,17 @@ export async function getSessionUserId(
       `SELECT user_id, expires_at FROM ${table} WHERE id = $1 LIMIT 1`,
       [tokenHash]
     );
-    const row = r.rows[0] as { user_id: string; expires_at: string } | undefined;
+    const row = r.rows[0] as
+      | { user_id: string; expires_at: string }
+      | undefined;
     if (!row) return null;
     return { userId: row.user_id, expiresAt: new Date(row.expires_at) };
   }
   const row = conn.db
-    .prepare(`SELECT user_id as userId, expires_at as expiresAt FROM "${table}" WHERE id = ? LIMIT 1`)
+    .prepare(
+      `SELECT user_id as userId, expires_at as expiresAt FROM "${table}" WHERE id = ? LIMIT 1`
+    )
     .get(tokenHash) as { userId: string; expiresAt: string } | undefined;
   if (!row) return null;
   return { userId: row.userId, expiresAt: new Date(row.expiresAt) };
 }
-

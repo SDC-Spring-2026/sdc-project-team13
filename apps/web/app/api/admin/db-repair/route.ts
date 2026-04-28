@@ -31,13 +31,21 @@ export async function POST() {
       const teamsR = await conn.pool.query(
         `SELECT slug, is_active, channel_id, role_id FROM ${T}`
       );
-      const teams = teamsR.rows as Array<{ slug: string; is_active: boolean; channel_id: string | null; role_id: string | null }>;
+      const teams = teamsR.rows as Array<{
+        slug: string;
+        is_active: boolean;
+        channel_id: string | null;
+        role_id: string | null;
+      }>;
       scannedTeams = teams.length;
 
       for (const t of teams) {
         // If team has channel+role but is not active, flip active on.
         if (!t.is_active && t.channel_id && t.role_id) {
-          await conn.pool.query(`UPDATE ${T} SET is_active = TRUE WHERE slug = $1`, [t.slug]);
+          await conn.pool.query(
+            `UPDATE ${T} SET is_active = TRUE WHERE slug = $1`,
+            [t.slug]
+          );
           fixedActiveFlagTeams++;
         }
 
@@ -45,7 +53,10 @@ export async function POST() {
           `SELECT user_id, perm_level FROM ${A} WHERE team_slug = $1 ORDER BY perm_level DESC, id ASC`,
           [t.slug]
         );
-        const rows = leaderR.rows as Array<{ user_id: string; perm_level: number }>;
+        const rows = leaderR.rows as Array<{
+          user_id: string;
+          perm_level: number;
+        }>;
         if (rows.length === 0) continue;
         const hasLeader = rows.some((r) => Number(r.perm_level) === 1);
         if (!hasLeader) {
@@ -60,11 +71,20 @@ export async function POST() {
       }
     } else {
       const teams = conn.db
-        .prepare(`SELECT slug, is_active as isActive, channel_id as channelId, role_id as roleId FROM ${T}`)
-        .all() as Array<{ slug: string; isActive: number; channelId: string | null; roleId: string | null }>;
+        .prepare(
+          `SELECT slug, is_active as isActive, channel_id as channelId, role_id as roleId FROM ${T}`
+        )
+        .all() as Array<{
+        slug: string;
+        isActive: number;
+        channelId: string | null;
+        roleId: string | null;
+      }>;
       scannedTeams = teams.length;
 
-      const updateActive = conn.db.prepare(`UPDATE ${T} SET is_active = 1 WHERE slug = ?`);
+      const updateActive = conn.db.prepare(
+        `UPDATE ${T} SET is_active = 1 WHERE slug = ?`
+      );
       const assocRowsStmt = conn.db.prepare(
         `SELECT id, user_id as userId, perm_level as permLevel FROM ${A} WHERE team_slug = ? ORDER BY perm_level DESC, id ASC`
       );
@@ -77,7 +97,10 @@ export async function POST() {
           updateActive.run(t.slug);
           fixedActiveFlagTeams++;
         }
-        const rows = assocRowsStmt.all(t.slug) as Array<{ userId: string; permLevel: number }>;
+        const rows = assocRowsStmt.all(t.slug) as Array<{
+          userId: string;
+          permLevel: number;
+        }>;
         if (rows.length === 0) continue;
         const hasLeader = rows.some((r) => Number(r.permLevel) === 1);
         if (!hasLeader) {
@@ -106,4 +129,3 @@ export async function POST() {
   };
   return NextResponse.json(out);
 }
-

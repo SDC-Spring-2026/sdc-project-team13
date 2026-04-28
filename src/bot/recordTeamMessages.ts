@@ -8,7 +8,9 @@ const MAX_STORED_LEN = 2000;
  * Persist a normal Discord message into MessageHistory when it occurs in a
  * channel that maps to a team (linked channel or project-name fallback).
  */
-export async function recordUserChannelMessage(message: Message): Promise<void> {
+export async function recordUserChannelMessage(
+  message: Message
+): Promise<void> {
   if (message.author.bot || message.partial) return;
 
   const text = message.content?.trim() ?? "";

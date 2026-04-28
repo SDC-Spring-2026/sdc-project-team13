@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowUpRight, Search, Shield, SlidersHorizontal } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
@@ -57,7 +63,9 @@ export function DashboardTeams({
       if (activeOnly && !t.isActive) return false;
       if (leaderOnly && t.permLevel !== 1) return false;
       if (!q) return true;
-      return normalize(`${t.slug} ${t.projectName ?? ""} ${t.githubRepo ?? ""}`).includes(q);
+      return normalize(
+        `${t.slug} ${t.projectName ?? ""} ${t.githubRepo ?? ""}`
+      ).includes(q);
     });
 
     const sorted = base.slice().sort((a, b) => {
@@ -77,13 +85,16 @@ export function DashboardTeams({
       if (activeOnly && !t.isActive) return false;
       if (leaderOnly) return false;
       if (!q) return true;
-      return normalize(`${t.slug} ${t.projectName ?? ""} ${t.githubRepo ?? ""}`).includes(q);
+      return normalize(
+        `${t.slug} ${t.projectName ?? ""} ${t.githubRepo ?? ""}`
+      ).includes(q);
     });
 
     const sorted = base.slice().sort((a, b) => {
       if (sort === "name") return a.slug.localeCompare(b.slug);
       if (sort === "members") return b.memberCount - a.memberCount;
-      if (sort === "messages") return (b.messageCount ?? 0) - (a.messageCount ?? 0);
+      if (sort === "messages")
+        return (b.messageCount ?? 0) - (a.messageCount ?? 0);
       const act = Number(b.isActive) - Number(a.isActive);
       if (act !== 0) return act;
       return (b.messageCount ?? 0) - (a.messageCount ?? 0);
@@ -99,7 +110,10 @@ export function DashboardTeams({
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold tracking-tight">Teams</h2>
-            <Badge variant="outline" className="gap-2 text-xs text-muted-foreground">
+            <Badge
+              variant="outline"
+              className="gap-2 text-xs text-muted-foreground"
+            >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Explore
             </Badge>
@@ -148,7 +162,11 @@ export function DashboardTeams({
             className="h-9"
             onClick={() => setLeaderOnly((v) => !v)}
             disabled={tab !== "my"}
-            title={tab !== "my" ? "Leader filter only applies to your teams" : "Only teams you lead"}
+            title={
+              tab !== "my"
+                ? "Leader filter only applies to your teams"
+                : "Only teams you lead"
+            }
           >
             Leader
           </Button>
@@ -170,7 +188,9 @@ export function DashboardTeams({
         <Card className="animate-in fade-in-0 duration-500">
           <CardHeader>
             <CardTitle>Nothing matched</CardTitle>
-            <CardDescription>Try clearing filters or searching a different term.</CardDescription>
+            <CardDescription>
+              Try clearing filters or searching a different term.
+            </CardDescription>
           </CardHeader>
         </Card>
       ) : (
@@ -193,7 +213,10 @@ export function DashboardTeams({
                               Leader
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-muted-foreground">
+                            <Badge
+                              variant="secondary"
+                              className="text-muted-foreground"
+                            >
                               Member
                             </Badge>
                           )}
@@ -201,7 +224,10 @@ export function DashboardTeams({
                         <CardDescription className="mt-1">
                           {t.projectName ? (
                             <>
-                              Project: <span className="font-medium text-foreground">{t.projectName}</span>
+                              Project:{" "}
+                              <span className="font-medium text-foreground">
+                                {t.projectName}
+                              </span>
                             </>
                           ) : (
                             "No active project row"
@@ -218,11 +244,18 @@ export function DashboardTeams({
                   <CardContent className="grid grid-cols-3 gap-3">
                     <Metric label="Members" value={t.memberCount} />
                     <Metric label="Messages" value={t.messageCount} />
-                    <Metric label="Status" value={t.isActive ? "Active" : "Inactive"} />
+                    <Metric
+                      label="Status"
+                      value={t.isActive ? "Active" : "Inactive"}
+                    />
                     {t.githubRepo ? (
                       <div className="col-span-3 mt-1 rounded-xl border bg-background/40 p-3">
-                        <div className="text-[11px] font-medium tracking-wide text-muted-foreground">GitHub repo</div>
-                        <div className="mt-1 truncate font-mono text-xs text-foreground">{t.githubRepo}</div>
+                        <div className="text-[11px] font-medium tracking-wide text-muted-foreground">
+                          GitHub repo
+                        </div>
+                        <div className="mt-1 truncate font-mono text-xs text-foreground">
+                          {t.githubRepo}
+                        </div>
                       </div>
                     ) : null}
                   </CardContent>
@@ -239,7 +272,9 @@ export function DashboardTeams({
                       <div className="min-w-0">
                         <CardTitle className="truncate">{t.slug}</CardTitle>
                         <CardDescription className="mt-1">
-                          {t.projectName ? `Project: ${t.projectName}` : "No active project"}
+                          {t.projectName
+                            ? `Project: ${t.projectName}`
+                            : "No active project"}
                         </CardDescription>
                       </div>
                       <Button variant="outline" className="h-9" asChild>
@@ -251,23 +286,31 @@ export function DashboardTeams({
                   </CardHeader>
                   <CardContent className="grid grid-cols-2 gap-3">
                     <Metric label="Members" value={t.memberCount} />
-                    <Metric label="Status" value={t.isActive ? "Active" : "Inactive"} />
+                    <Metric
+                      label="Status"
+                      value={t.isActive ? "Active" : "Inactive"}
+                    />
 
                     {t.viewerPermLevel !== null ? (
                       <div className="col-span-2 rounded-xl border bg-background/40 p-3 text-xs text-muted-foreground">
-                        You’re on this team ({t.viewerPermLevel === 1 ? "Leader" : "Member"}).
+                        You’re on this team (
+                        {t.viewerPermLevel === 1 ? "Leader" : "Member"}).
                       </div>
                     ) : null}
 
-                    {canSeeAdmin && (t.githubRepo || t.messageCount !== null) ? (
+                    {canSeeAdmin &&
+                    (t.githubRepo || t.messageCount !== null) ? (
                       <div className="col-span-2 rounded-xl border bg-background/40 p-3 text-xs text-muted-foreground">
                         {t.githubRepo ? (
                           <div>
-                            GitHub repo: <span className="font-mono">{t.githubRepo}</span>
+                            GitHub repo:{" "}
+                            <span className="font-mono">{t.githubRepo}</span>
                           </div>
                         ) : null}
                         {t.messageCount !== null ? (
-                          <div className={t.githubRepo ? "mt-1" : ""}>Saved messages: {t.messageCount}</div>
+                          <div className={t.githubRepo ? "mt-1" : ""}>
+                            Saved messages: {t.messageCount}
+                          </div>
                         ) : null}
                       </div>
                     ) : null}
@@ -279,4 +322,3 @@ export function DashboardTeams({
     </section>
   );
 }
-

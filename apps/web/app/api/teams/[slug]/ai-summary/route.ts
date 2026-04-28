@@ -22,7 +22,11 @@ function shapeTranscript(
     timestamp: string | null;
     content: string | null;
   }>,
-  { maxLines, maxLineChars, maxTotalChars }: { maxLines: number; maxLineChars: number; maxTotalChars: number }
+  {
+    maxLines,
+    maxLineChars,
+    maxTotalChars
+  }: { maxLines: number; maxLineChars: number; maxTotalChars: number }
 ) {
   const newestLast = msgs.slice().reverse();
   const out: string[] = [];
@@ -128,7 +132,10 @@ export async function POST(
       if (e instanceof GeminiAllKeysRateLimitedError) {
         return NextResponse.json(
           { error: e.message },
-          { status: 429, headers: { "retry-after": String(e.retryAfterSeconds) } }
+          {
+            status: 429,
+            headers: { "retry-after": String(e.retryAfterSeconds) }
+          }
         );
       }
       return NextResponse.json({ error: String(e) }, { status: 500 });
@@ -140,13 +147,17 @@ export async function POST(
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      controller.enqueue(enc.encode(sseFrame("meta", { teamSlug, model, generatedAt })));
+      controller.enqueue(
+        enc.encode(sseFrame("meta", { teamSlug, model, generatedAt }))
+      );
     },
     async pull(controller) {
       // Only run once; after we finish, close. (We use pull to allow async.)
       try {
         if (request.signal.aborted) {
-          controller.enqueue(enc.encode(sseFrame("error", { error: "aborted" })));
+          controller.enqueue(
+            enc.encode(sseFrame("error", { error: "aborted" }))
+          );
           controller.close();
           return;
         }
@@ -168,13 +179,14 @@ export async function POST(
               });
 
               // Some versions return a Promise or an object with a `.stream` async iterable.
-              const iter =
-                (await Promise.resolve(streamOrIter)) as unknown as
-                  | AsyncIterable<unknown>
-                  | { stream?: AsyncIterable<unknown> };
+              const iter = (await Promise.resolve(streamOrIter)) as unknown as
+                | AsyncIterable<unknown>
+                | { stream?: AsyncIterable<unknown> };
 
               const source =
-                typeof (iter as AsyncIterable<unknown>)?.[Symbol.asyncIterator] === "function"
+                typeof (iter as AsyncIterable<unknown>)?.[
+                  Symbol.asyncIterator
+                ] === "function"
                   ? (iter as AsyncIterable<unknown>)
                   : (iter as { stream?: AsyncIterable<unknown> }).stream;
 
@@ -189,9 +201,14 @@ export async function POST(
                   };
                   const delta =
                     c.text ??
-                    c.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
+                    c.candidates?.[0]?.content?.parts
+                      ?.map((p) => p.text ?? "")
+                      .join("") ??
                     "";
-                  if (delta) controller.enqueue(enc.encode(sseFrame("delta", { delta })));
+                  if (delta)
+                    controller.enqueue(
+                      enc.encode(sseFrame("delta", { delta }))
+                    );
                 }
               } else {
                 throw new Error("Gemini stream is not async iterable");
@@ -200,11 +217,15 @@ export async function POST(
               throw new Error("Streaming not supported");
             }
           } catch (e) {
-          const msg = String((e as Error)?.message ?? e);
-          // Don't swallow quota / rate limit errors: let the key-rotation wrapper retry with another key.
-          if (msg.includes("RESOURCE_EXHAUSTED") || msg.includes("Quota exceeded") || msg.includes("429")) {
-            throw e;
-          }
+            const msg = String((e as Error)?.message ?? e);
+            // Don't swallow quota / rate limit errors: let the key-rotation wrapper retry with another key.
+            if (
+              msg.includes("RESOURCE_EXHAUSTED") ||
+              msg.includes("Quota exceeded") ||
+              msg.includes("429")
+            ) {
+              throw e;
+            }
 
             // Hard fallback: one-shot generation, then stream as a single delta.
             const resp = (await anyModels.generateContent?.({
@@ -219,9 +240,14 @@ export async function POST(
 
             const text =
               resp?.text ??
-              resp?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
+              resp?.candidates?.[0]?.content?.parts
+                ?.map((p) => p.text ?? "")
+                .join("") ??
               "";
-            if (text) controller.enqueue(enc.encode(sseFrame("delta", { delta: text })));
+            if (text)
+              controller.enqueue(
+                enc.encode(sseFrame("delta", { delta: text }))
+              );
           }
 
           return true;
@@ -232,10 +258,17 @@ export async function POST(
       } catch (e) {
         if (e instanceof GeminiAllKeysRateLimitedError) {
           controller.enqueue(
-            enc.encode(sseFrame("error", { error: e.message, retryAfterSeconds: e.retryAfterSeconds }))
+            enc.encode(
+              sseFrame("error", {
+                error: e.message,
+                retryAfterSeconds: e.retryAfterSeconds
+              })
+            )
           );
         } else {
-          controller.enqueue(enc.encode(sseFrame("error", { error: String(e) })));
+          controller.enqueue(
+            enc.encode(sseFrame("error", { error: String(e) }))
+          );
         }
         controller.close();
       }
@@ -250,4 +283,3 @@ export async function POST(
     }
   });
 }
-

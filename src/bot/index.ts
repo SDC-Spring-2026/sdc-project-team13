@@ -20,7 +20,11 @@ export async function getBotClient(): Promise<Client<true>> {
       // Instanciate a new client.
       logger.info("No bot client exists at this time, creating a new one...");
       client = new Client({
-        intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+        intents: [
+          GatewayIntentBits.Guilds,
+          GatewayIntentBits.GuildMessages,
+          GatewayIntentBits.MessageContent
+        ]
       });
 
       // Send login request, and reject if request fails.

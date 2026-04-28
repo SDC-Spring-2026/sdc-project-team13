@@ -10,7 +10,12 @@ type Props = {
   backHref?: string;
   backLabel?: string;
   rightLinks?: Array<
-    | { kind: "link"; href: string; label: string; icon?: "arrowUpRight" | "user" }
+    | {
+        kind: "link";
+        href: string;
+        label: string;
+        icon?: "arrowUpRight" | "user";
+      }
     | { kind: "node"; node: ReactNode }
   >;
   children: ReactNode;
@@ -38,7 +43,9 @@ export function AppShell({
               <Button variant="ghost" className="h-9 px-2" asChild>
                 <Link href={backHref}>
                   <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">{backLabel ?? "Back"}</span>
+                  <span className="hidden sm:inline">
+                    {backLabel ?? "Back"}
+                  </span>
                 </Link>
               </Button>
             ) : (
@@ -61,7 +68,12 @@ export function AppShell({
             {rightLinks?.map((l, idx) => {
               if (l.kind === "node") return <div key={idx}>{l.node}</div>;
               return (
-                <Button key={idx} variant="ghost" className="h-9 px-2.5" asChild>
+                <Button
+                  key={idx}
+                  variant="ghost"
+                  className="h-9 px-2.5"
+                  asChild
+                >
                   <Link href={l.href} prefetch={false}>
                     {l.label}
                     {l.icon ? <Icon icon={l.icon} /> : null}
@@ -84,4 +96,3 @@ export function AppShell({
     </div>
   );
 }
-

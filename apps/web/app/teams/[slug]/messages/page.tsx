@@ -2,7 +2,13 @@ import Link from "next/link";
 import { loadEnvConfig } from "@next/env";
 import { MessagesSquare } from "lucide-react";
 import { Button } from "../../../../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "../../../../components/ui/card";
 import { Separator } from "../../../../components/ui/separator";
 import { AppShell } from "../../../../components/app-shell";
 import { requireWebAdmin } from "../../../../lib/adminAuth";
@@ -32,7 +38,10 @@ export default async function TeamMessagesPage({
           kind: "node",
           node: (
             <Button variant="ghost" className="h-9 px-2.5" asChild>
-              <Link href={`/teams/${encodeURIComponent(teamSlug)}`} prefetch={false}>
+              <Link
+                href={`/teams/${encodeURIComponent(teamSlug)}`}
+                prefetch={false}
+              >
                 Team
               </Link>
             </Button>
@@ -52,12 +61,16 @@ export default async function TeamMessagesPage({
         </CardHeader>
         <CardContent className="space-y-3">
           {messages.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No messages yet.</div>
+            <div className="text-sm text-muted-foreground">
+              No messages yet.
+            </div>
           ) : (
             messages.map((m) => (
               <div key={m.id} className="rounded-lg border bg-background p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span className="font-mono">{m.userId ? maskId(m.userId) : "—"}</span>
+                  <span className="font-mono">
+                    {m.userId ? maskId(m.userId) : "—"}
+                  </span>
                   <span className="font-mono">#{m.id}</span>
                   <span>{m.scope ?? "msg"}</span>
                   <span>{m.timestamp ?? "—"}</span>
@@ -74,4 +87,3 @@ export default async function TeamMessagesPage({
     </AppShell>
   );
 }
-

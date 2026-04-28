@@ -7,4 +7,3 @@ export function Separator({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return <div className={cn("h-px w-full bg-border", className)} {...props} />;
 }
-

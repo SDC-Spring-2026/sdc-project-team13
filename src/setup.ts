@@ -26,7 +26,9 @@ const logger = createNewLogger("setup");
   const clientId = process.env.CLIENT_ID;
 
   if (!token || !clientId) {
-    logger.error("Missing DISCORD_TOKEN or CLIENT_ID: cannot register commands.");
+    logger.error(
+      "Missing DISCORD_TOKEN or CLIENT_ID: cannot register commands."
+    );
     process.exit(1);
   }
 
@@ -35,18 +37,26 @@ const logger = createNewLogger("setup");
   if (process.env.NODE_ENV === "production") {
     // Global commands propagate to every server the bot is in (~1 hour delay).
     logger.info("Registering commands globally (production)...");
-    await rest.put(Routes.applicationCommands(clientId), { body: commandDefinitions });
-    logger.info("Successfully registered global commands. Changes may take up to 1 hour to propagate.");
+    await rest.put(Routes.applicationCommands(clientId), {
+      body: commandDefinitions
+    });
+    logger.info(
+      "Successfully registered global commands. Changes may take up to 1 hour to propagate."
+    );
   } else {
     const guildId = process.env.GUILD_ID;
     if (!guildId) {
-      logger.error("Missing GUILD_ID: cannot register guild commands for dev environment.");
+      logger.error(
+        "Missing GUILD_ID: cannot register guild commands for dev environment."
+      );
       process.exit(1);
     }
 
     // Guild commands propagate instantly and are scoped to a single server.
     logger.info("Registering commands for test guild (dev)...");
-    await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commandDefinitions });
+    await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+      body: commandDefinitions
+    });
     logger.info("Successfully registered commands for test server.");
   }
 

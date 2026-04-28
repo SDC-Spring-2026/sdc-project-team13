@@ -25,10 +25,10 @@ export const db_teams: DatabaseTeamsManager = {
   },
 
   async setTeamRepo(team_slug, repo_name) {
-    await driver().query(
-      "UPDATE Teams SET github_repo = ? WHERE slug = ?",
-      [repo_name, team_slug]
-    );
+    await driver().query("UPDATE Teams SET github_repo = ? WHERE slug = ?", [
+      repo_name,
+      team_slug
+    ]);
     const cached = dbCache.get<Teams | null>(`t:${team_slug}`);
     invalidateTeam(team_slug, cached?.channel_id);
   },
@@ -180,7 +180,12 @@ export const db_teams: DatabaseTeamsManager = {
   async getAllActiveTeamsWithProjects() {
     const T = tbl("teams");
     const P = tbl("projects");
-    return driver().query<{ slug: string; channel_id: string; github_repo: string | null; project_name: string | null }>(
+    return driver().query<{
+      slug: string;
+      channel_id: string;
+      github_repo: string | null;
+      project_name: string | null;
+    }>(
       `SELECT t.slug, t.channel_id, t.github_repo, p.name AS project_name
        FROM ${T} t
        LEFT JOIN ${P} p ON p.team_slug = t.slug AND p.is_active = ?

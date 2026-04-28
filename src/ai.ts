@@ -2,7 +2,9 @@ import { CACHE_BOT_INSTRUCTIONS } from "./botInstructions";
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
-type GoogleGenAI = import("@google/genai", { with: { "resolution-mode": "import" } }).GoogleGenAI;
+type GoogleGenAI = import("@google/genai", {
+  with: { "resolution-mode": "import" }
+}).GoogleGenAI;
 let ai: GoogleGenAI | null = null;
 
 async function getAiClient(): Promise<GoogleGenAI | null> {

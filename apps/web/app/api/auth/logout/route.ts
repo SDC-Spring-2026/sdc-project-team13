@@ -1,7 +1,11 @@
 import { loadEnvConfig } from "@next/env";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { deleteSession, hashSessionToken, openWebDb } from "../../../../lib/webDb";
+import {
+  deleteSession,
+  hashSessionToken,
+  openWebDb
+} from "../../../../lib/webDb";
 
 export const dynamic = "force-dynamic";
 
@@ -31,4 +35,3 @@ export async function POST() {
   });
   return res;
 }
-

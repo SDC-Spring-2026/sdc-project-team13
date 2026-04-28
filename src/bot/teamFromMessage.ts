@@ -34,7 +34,11 @@ export async function resolveTeamForMessage(
   if (byChannel) return { team: byChannel, match: "channel_id" };
 
   const ch = message.channel;
-  const chName = ch.isDMBased() ? null : "name" in ch ? ch.name ?? null : null;
+  const chName = ch.isDMBased()
+    ? null
+    : "name" in ch
+      ? (ch.name ?? null)
+      : null;
   if (!chName) return { team: null, match: null };
 
   const slugFromName = await resolveTeamSlug(

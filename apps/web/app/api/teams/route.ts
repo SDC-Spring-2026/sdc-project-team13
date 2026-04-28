@@ -62,7 +62,9 @@ export async function GET() {
         channelId: row.channel_id ?? null,
         isActive: Boolean(row.is_active),
         githubRepo: row.github_repo ?? null,
-        permLevel: Number((row as unknown as { perm_level: number }).perm_level ?? 0)
+        permLevel: Number(
+          (row as unknown as { perm_level: number }).perm_level ?? 0
+        )
       }))
     });
   } finally {
@@ -70,4 +72,3 @@ export async function GET() {
     else conn.close();
   }
 }
-

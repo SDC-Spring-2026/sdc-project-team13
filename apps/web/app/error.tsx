@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { AlertTriangle, ArrowRight, Home } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "../components/ui/card";
 
 export default function GlobalError({
   error,
@@ -74,4 +80,3 @@ export default function GlobalError({
     </main>
   );
 }
-

@@ -44,16 +44,24 @@ export function parseRetryAfterSeconds(txt: string): number | null {
 export class GeminiAllKeysRateLimitedError extends Error {
   retryAfterSeconds: number;
   constructor(retryAfterSeconds: number) {
-    super(`All Gemini API keys are rate limited. Retry after ~${retryAfterSeconds}s.`);
+    super(
+      `All Gemini API keys are rate limited. Retry after ~${retryAfterSeconds}s.`
+    );
     this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
-export function markGeminiKeyCooldown(apiKey: string, retryAfterSeconds: number) {
+export function markGeminiKeyCooldown(
+  apiKey: string,
+  retryAfterSeconds: number
+) {
   const es = ensureEntriesLoaded();
   const e = es.find((x) => x.key === apiKey);
   if (!e) return;
-  e.cooldownUntilMs = Math.max(e.cooldownUntilMs, Date.now() + retryAfterSeconds * 1000);
+  e.cooldownUntilMs = Math.max(
+    e.cooldownUntilMs,
+    Date.now() + retryAfterSeconds * 1000
+  );
 }
 
 export function chooseGeminiApiKey(): { apiKey: string; keyId: string } {
@@ -78,12 +86,17 @@ export function chooseGeminiApiKey(): { apiKey: string; keyId: string } {
   }
 
   // All keys are cooled down; pick the earliest available time.
-  const soonest = es.reduce((acc, e) => Math.min(acc, e.cooldownUntilMs), Number.POSITIVE_INFINITY);
+  const soonest = es.reduce(
+    (acc, e) => Math.min(acc, e.cooldownUntilMs),
+    Number.POSITIVE_INFINITY
+  );
   const retryAfterSeconds = Math.max(1, Math.ceil((soonest - now) / 1000));
   throw new GeminiAllKeysRateLimitedError(retryAfterSeconds);
 }
 
-export async function withGeminiKeyRotation<T>(fn: (apiKey: string) => Promise<T>): Promise<T> {
+export async function withGeminiKeyRotation<T>(
+  fn: (apiKey: string) => Promise<T>
+): Promise<T> {
   const es = ensureEntriesLoaded();
   const maxAttempts = Math.max(1, es.length);
   let lastErr: unknown = null;
@@ -97,7 +110,11 @@ export async function withGeminiKeyRotation<T>(fn: (apiKey: string) => Promise<T
       const msg = String((e as Error)?.message ?? e);
       const retryAfter = parseRetryAfterSeconds(msg);
       // Heuristic: when quota/rate-limited, cool down and try another key.
-      if (msg.includes("RESOURCE_EXHAUSTED") || msg.includes("Quota exceeded") || msg.includes("429")) {
+      if (
+        msg.includes("RESOURCE_EXHAUSTED") ||
+        msg.includes("Quota exceeded") ||
+        msg.includes("429")
+      ) {
         markGeminiKeyCooldown(apiKey, retryAfter ?? 30);
         continue;
       }
@@ -107,4 +124,3 @@ export async function withGeminiKeyRotation<T>(fn: (apiKey: string) => Promise<T
 
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
-

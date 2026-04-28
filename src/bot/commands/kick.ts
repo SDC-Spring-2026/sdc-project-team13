@@ -29,7 +29,8 @@ export const kickCommand = {
     {
       type: 3,
       name: "person",
-      description: "Member to remove (mention, @name, username, or display name)",
+      description:
+        "Member to remove (mention, @name, username, or display name)",
       required: true
     }
   ]
@@ -172,13 +173,11 @@ export async function handleKick(interaction: ChatInputCommandInteraction) {
       db.getTeam(teamSlug)
     ]);
     if (kickedMember?.github && team?.github_repo) {
-      await removeRepoCollaborator(
-        team.github_repo,
-        kickedMember.github
-      ).catch((e) =>
-        logger.error(
-          `Failed to remove GitHub collaborator for ${target.user.tag}: ${e instanceof Error ? e.message : String(e)}`
-        )
+      await removeRepoCollaborator(team.github_repo, kickedMember.github).catch(
+        (e) =>
+          logger.error(
+            `Failed to remove GitHub collaborator for ${target.user.tag}: ${e instanceof Error ? e.message : String(e)}`
+          )
       );
     }
 

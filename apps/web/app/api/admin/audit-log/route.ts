@@ -16,7 +16,10 @@ export async function GET() {
   try {
     const C = tbl("botConfig");
     if (conn.driver === "postgres") {
-      const r = await conn.pool.query(`SELECT value FROM ${C} WHERE key = $1 LIMIT 1`, [KEY]);
+      const r = await conn.pool.query(
+        `SELECT value FROM ${C} WHERE key = $1 LIMIT 1`,
+        [KEY]
+      );
       const row = r.rows[0] as { value: string | null } | undefined;
       return NextResponse.json({ channelId: row?.value ?? null });
     }
@@ -33,8 +36,11 @@ export async function GET() {
 export async function POST(request: Request) {
   loadEnvConfig(process.cwd());
   await requireWebAdmin();
-  const body = (await request.json().catch(() => null)) as { channelId?: string | null } | null;
-  const channelId = typeof body?.channelId === "string" ? body.channelId.trim() : "";
+  const body = (await request.json().catch(() => null)) as {
+    channelId?: string | null;
+  } | null;
+  const channelId =
+    typeof body?.channelId === "string" ? body.channelId.trim() : "";
 
   const conn = openWebDb();
   try {
@@ -67,4 +73,3 @@ export async function POST(request: Request) {
     else conn.close();
   }
 }
-

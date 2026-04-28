@@ -1,7 +1,13 @@
 import { loadEnvConfig } from "@next/env";
 import { ArrowUpRight, Shield, Sparkles } from "lucide-react";
 import { Button } from "../../../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
 import { Metric } from "../../../components/ui/metric";
 import { AppShell } from "../../../components/app-shell";
@@ -24,7 +30,13 @@ export default async function TeamPage({
   const team = await getTeamOverview(userId, teamSlug);
   const nameById = new Map(
     await Promise.all(
-      team.members.map(async (m) => [m.discordId, await getDiscordDisplayName(m.discordId).catch(() => null)] as const)
+      team.members.map(
+        async (m) =>
+          [
+            m.discordId,
+            await getDiscordDisplayName(m.discordId).catch(() => null)
+          ] as const
+      )
     )
   );
 
@@ -89,16 +101,31 @@ export default async function TeamPage({
             <CardContent className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-3">
                 <Metric label="Members" value={team.members.length} />
-                <Metric label="Project" value={team.projectName ?? "—"} className="sm:col-span-1" />
-                <Metric label="Status" value={team.isActive ? "Active" : "Inactive"} className="sm:col-span-1" />
+                <Metric
+                  label="Project"
+                  value={team.projectName ?? "—"}
+                  className="sm:col-span-1"
+                />
+                <Metric
+                  label="Status"
+                  value={team.isActive ? "Active" : "Inactive"}
+                  className="sm:col-span-1"
+                />
               </div>
 
               {team.githubRepo ? (
                 <div className="flex items-center justify-between rounded-lg border bg-background p-3">
-                  <div className="text-xs text-muted-foreground">GitHub repo</div>
+                  <div className="text-xs text-muted-foreground">
+                    GitHub repo
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs">{team.githubRepo}</span>
-                    <Button variant="ghost" className="h-8 px-2" asChild title="Open repository in GitHub">
+                    <Button
+                      variant="ghost"
+                      className="h-8 px-2"
+                      asChild
+                      title="Open repository in GitHub"
+                    >
                       <a
                         href={`https://github.com/${process.env.GITHUB_ORG ?? ""}/${team.githubRepo}`}
                         target="_blank"
@@ -174,12 +201,14 @@ export default async function TeamPage({
             <CardHeader>
               <CardTitle>Privacy</CardTitle>
               <CardDescription>
-                Message history and raw IDs are intentionally hidden from the dashboard UI.
+                Message history and raw IDs are intentionally hidden from the
+                dashboard UI.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <div className="rounded-lg border bg-muted/20 p-3">
-                AI features still use saved messages server-side for context, but we don’t render them here.
+                AI features still use saved messages server-side for context,
+                but we don’t render them here.
               </div>
             </CardContent>
           </Card>
@@ -188,4 +217,3 @@ export default async function TeamPage({
     </AppShell>
   );
 }
-

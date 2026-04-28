@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Send, Sparkles, Square } from "lucide-react";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "./ui/card";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
 import { Markdown } from "./markdown";
@@ -31,7 +37,13 @@ function parseRetryAfterSeconds(txt: string): number | null {
   return null;
 }
 
-export function AiChatCard({ teamSlug, embedded = false }: { teamSlug: string; embedded?: boolean }) {
+export function AiChatCard({
+  teamSlug,
+  embedded = false
+}: {
+  teamSlug: string;
+  embedded?: boolean;
+}) {
   const [loading, setLoading] = useState(false);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [prompt, setPrompt] = useState("");
@@ -79,12 +91,18 @@ export function AiChatCard({ teamSlug, embedded = false }: { teamSlug: string; e
     setMsgs((m) => [...m, { role: "user", text: p }]);
 
     try {
-      const r = await fetch(`/api/teams/${encodeURIComponent(teamSlug)}/ai-chat`, {
-        method: "POST",
-        headers: { accept: "text/event-stream", "content-type": "application/json" },
-        body: JSON.stringify({ prompt: p }),
-        signal: ac.signal
-      });
+      const r = await fetch(
+        `/api/teams/${encodeURIComponent(teamSlug)}/ai-chat`,
+        {
+          method: "POST",
+          headers: {
+            accept: "text/event-stream",
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({ prompt: p }),
+          signal: ac.signal
+        }
+      );
 
       if (!r.ok) {
         const txt = await r.text().catch(() => "");
@@ -97,18 +115,27 @@ export function AiChatCard({ teamSlug, embedded = false }: { teamSlug: string; e
           setCooldownUntilMs(Date.now() + retryAfter * 1000);
           setMsgs((m) => [
             ...m,
-            { role: "assistant", text: `Rate limited (429). Please retry in ~${retryAfter}s.` }
+            {
+              role: "assistant",
+              text: `Rate limited (429). Please retry in ~${retryAfter}s.`
+            }
           ]);
           return;
         }
         setMsgs((m) => [
           ...m,
-          { role: "assistant", text: `AI chat failed (${r.status}). ${txt.slice(0, 300)}` }
+          {
+            role: "assistant",
+            text: `AI chat failed (${r.status}). ${txt.slice(0, 300)}`
+          }
         ]);
         return;
       }
       if (!r.body) {
-        setMsgs((m) => [...m, { role: "assistant", text: "AI chat failed (no response body)." }]);
+        setMsgs((m) => [
+          ...m,
+          { role: "assistant", text: "AI chat failed (no response body)." }
+        ]);
         return;
       }
 
@@ -150,17 +177,25 @@ export function AiChatCard({ teamSlug, embedded = false }: { teamSlug: string; e
             };
             setMeta(localMeta);
           } else if (ev === "delta") {
-            const delta = isRecord(payload) && typeof payload.delta === "string" ? payload.delta : "";
+            const delta =
+              isRecord(payload) && typeof payload.delta === "string"
+                ? payload.delta
+                : "";
             if (delta) {
               full += delta;
               setStream(full);
             }
           } else if (ev === "error") {
             const err =
-              isRecord(payload) && payload.error !== undefined ? String(payload.error) : "Unknown error";
+              isRecord(payload) && payload.error !== undefined
+                ? String(payload.error)
+                : "Unknown error";
             const retryAfter = parseRetryAfterSeconds(err);
             if (retryAfter) setCooldownUntilMs(Date.now() + retryAfter * 1000);
-            setMsgs((m) => [...m, { role: "assistant", text: `AI error: ${err}` }]);
+            setMsgs((m) => [
+              ...m,
+              { role: "assistant", text: `AI error: ${err}` }
+            ]);
           } else if (ev === "done") {
             setMsgs((m) => [...m, { role: "assistant", text: full.trim() }]);
             setStream("");
@@ -169,7 +204,10 @@ export function AiChatCard({ teamSlug, embedded = false }: { teamSlug: string; e
       }
     } catch (e) {
       if ((e as Error)?.name === "AbortError") return;
-      setMsgs((m) => [...m, { role: "assistant", text: `AI chat error: ${String(e)}` }]);
+      setMsgs((m) => [
+        ...m,
+        { role: "assistant", text: `AI chat error: ${String(e)}` }
+      ]);
     } finally {
       setLoading(false);
       setTimeout(() => inputRef.current?.focus(), 0);
@@ -190,7 +228,7 @@ export function AiChatCard({ teamSlug, embedded = false }: { teamSlug: string; e
               void send();
             }
           }}
-            disabled={loading || cooldownLeftSeconds > 0}
+          disabled={loading || cooldownLeftSeconds > 0}
         />
         <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
           <div className="truncate">
@@ -214,10 +252,14 @@ export function AiChatCard({ teamSlug, embedded = false }: { teamSlug: string; e
       <Separator />
 
       <div className="space-y-2">
-        <StreamingBar active={loading} label={stream ? "Assistant is responding" : "Starting"} />
+        <StreamingBar
+          active={loading}
+          label={stream ? "Assistant is responding" : "Starting"}
+        />
         {renderedMsgs.length === 0 ? (
           <div className="text-sm text-muted-foreground">
-            Try: “What changed recently?”, “What are the blockers?”, “Make a checklist for today.”
+            Try: “What changed recently?”, “What are the blockers?”, “Make a
+            checklist for today.”
           </div>
         ) : (
           renderedMsgs.slice(-10).map((m, i) => (
@@ -239,11 +281,17 @@ export function AiChatCard({ teamSlug, embedded = false }: { teamSlug: string; e
                 ) : null}
               </div>
               {m.role === "assistant" ? (
-                <Markdown streaming={loading && i === renderedMsgs.length - 1 && Boolean(stream)}>
+                <Markdown
+                  streaming={
+                    loading && i === renderedMsgs.length - 1 && Boolean(stream)
+                  }
+                >
                   {m.text}
                 </Markdown>
               ) : (
-                <div className="whitespace-pre-wrap leading-relaxed">{m.text}</div>
+                <div className="whitespace-pre-wrap leading-relaxed">
+                  {m.text}
+                </div>
               )}
             </div>
           ))
@@ -301,4 +349,3 @@ export function AiChatCard({ teamSlug, embedded = false }: { teamSlug: string; e
     </Card>
   );
 }
-

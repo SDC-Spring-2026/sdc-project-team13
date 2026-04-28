@@ -21,7 +21,10 @@ function touchActiveSession(channelId: string): void {
   if (existing) clearTimeout(existing);
   activeChannels.set(
     channelId,
-    setTimeout(() => activeChannels.delete(channelId), ACTIVE_SESSION_TIMEOUT_MS)
+    setTimeout(
+      () => activeChannels.delete(channelId),
+      ACTIVE_SESSION_TIMEOUT_MS
+    )
   );
 }
 
@@ -112,7 +115,9 @@ logger.info("Starting the program...");
         let isReplyToBot = false;
         if (!isMentioned && message.reference?.messageId) {
           try {
-            const referenced = await message.channel.messages.fetch(message.reference.messageId);
+            const referenced = await message.channel.messages.fetch(
+              message.reference.messageId
+            );
             isReplyToBot = referenced.author.id === botId;
           } catch {
             // Referenced message deleted or inaccessible — skip
@@ -129,9 +134,10 @@ logger.info("Starting the program...");
         // Strip mentions so they don't appear in the prompt sent to the model
         const prompt = content.replace(/<@!?\d+>/g, "").trim();
 
-        const respond = isActiveSession && !isMentioned && !isReplyToBot
-          ? (text: string) => message.channel.send(text)
-          : (text: string) => message.reply(text);
+        const respond =
+          isActiveSession && !isMentioned && !isReplyToBot
+            ? (text: string) => message.channel.send(text)
+            : (text: string) => message.reply(text);
 
         if (!prompt) {
           await respond(getAiHelpText());
@@ -141,16 +147,22 @@ logger.info("Starting the program...");
         try {
           await message.channel.sendTyping();
           const sessionContext = await buildAiSessionContext(message);
-          const member = await db.getMember(message.author.id).catch(() => null);
+          const member = await db
+            .getMember(message.author.id)
+            .catch(() => null);
           const displayName = member?.github ?? message.author.username;
-          const reply = await askCache(`${displayName}: ${prompt}`, { sessionContext });
+          const reply = await askCache(`${displayName}: ${prompt}`, {
+            sessionContext
+          });
           await respond(reply);
           void recordAiAssistantReply(message, reply).catch((err) =>
             botLog.warn("MessageHistory AI reply archive failed:", err as Error)
           );
         } catch (err) {
           botLog.error("Error during AI reply:", err as Error);
-          await respond("AI chat failed. Check your Gemini API key and try again.");
+          await respond(
+            "AI chat failed. Check your Gemini API key and try again."
+          );
         }
       });
     })

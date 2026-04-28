@@ -21,7 +21,11 @@ function shapeTranscript(
     timestamp: string | null;
     content: string | null;
   }>,
-  { maxLines, maxLineChars, maxTotalChars }: { maxLines: number; maxLineChars: number; maxTotalChars: number }
+  {
+    maxLines,
+    maxLineChars,
+    maxTotalChars
+  }: { maxLines: number; maxLineChars: number; maxTotalChars: number }
 ) {
   const newestLast = msgs.slice().reverse();
   const out: string[] = [];
@@ -85,19 +89,26 @@ export async function POST(
   const createdAt = new Date().toISOString();
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      controller.enqueue(enc.encode(sseFrame("meta", { teamSlug, model, createdAt })));
+      controller.enqueue(
+        enc.encode(sseFrame("meta", { teamSlug, model, createdAt }))
+      );
     },
     async pull(controller) {
       try {
         if (request.signal.aborted) {
-          controller.enqueue(enc.encode(sseFrame("error", { error: "aborted" })));
+          controller.enqueue(
+            enc.encode(sseFrame("error", { error: "aborted" }))
+          );
           controller.close();
           return;
         }
 
         const contents = [
           { role: "user", parts: [{ text: system }] },
-          { role: "user", parts: [{ text: `User (${userId}) asks: ${promptRaw}` }] }
+          {
+            role: "user",
+            parts: [{ text: `User (${userId}) asks: ${promptRaw}` }]
+          }
         ];
 
         await withGeminiKeyRotation(async (apiKey) => {
@@ -109,15 +120,19 @@ export async function POST(
 
           try {
             if (typeof anyModels.generateContentStream === "function") {
-              const streamOrIter = anyModels.generateContentStream({ model, contents });
+              const streamOrIter = anyModels.generateContentStream({
+                model,
+                contents
+              });
 
-              const iter =
-                (await Promise.resolve(streamOrIter)) as unknown as
-                  | AsyncIterable<unknown>
-                  | { stream?: AsyncIterable<unknown> };
+              const iter = (await Promise.resolve(streamOrIter)) as unknown as
+                | AsyncIterable<unknown>
+                | { stream?: AsyncIterable<unknown> };
 
               const source =
-                typeof (iter as AsyncIterable<unknown>)?.[Symbol.asyncIterator] === "function"
+                typeof (iter as AsyncIterable<unknown>)?.[
+                  Symbol.asyncIterator
+                ] === "function"
                   ? (iter as AsyncIterable<unknown>)
                   : (iter as { stream?: AsyncIterable<unknown> }).stream;
 
@@ -132,9 +147,14 @@ export async function POST(
                   };
                   const delta =
                     c.text ??
-                    c.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
+                    c.candidates?.[0]?.content?.parts
+                      ?.map((p) => p.text ?? "")
+                      .join("") ??
                     "";
-                  if (delta) controller.enqueue(enc.encode(sseFrame("delta", { delta })));
+                  if (delta)
+                    controller.enqueue(
+                      enc.encode(sseFrame("delta", { delta }))
+                    );
                 }
               } else {
                 throw new Error("Gemini stream is not async iterable");
@@ -144,11 +164,18 @@ export async function POST(
             }
           } catch (e) {
             const msg = String((e as Error)?.message ?? e);
-            if (msg.includes("RESOURCE_EXHAUSTED") || msg.includes("Quota exceeded") || msg.includes("429")) {
+            if (
+              msg.includes("RESOURCE_EXHAUSTED") ||
+              msg.includes("Quota exceeded") ||
+              msg.includes("429")
+            ) {
               throw e;
             }
 
-            const resp = (await anyModels.generateContent?.({ model, contents })) as {
+            const resp = (await anyModels.generateContent?.({
+              model,
+              contents
+            })) as {
               text?: string;
               candidates?: Array<{
                 content?: { parts?: Array<{ text?: string }> };
@@ -156,9 +183,14 @@ export async function POST(
             };
             const text =
               resp?.text ??
-              resp?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
+              resp?.candidates?.[0]?.content?.parts
+                ?.map((p) => p.text ?? "")
+                .join("") ??
               "";
-            if (text) controller.enqueue(enc.encode(sseFrame("delta", { delta: text })));
+            if (text)
+              controller.enqueue(
+                enc.encode(sseFrame("delta", { delta: text }))
+              );
           }
 
           return true;
@@ -169,10 +201,17 @@ export async function POST(
       } catch (e) {
         if (e instanceof GeminiAllKeysRateLimitedError) {
           controller.enqueue(
-            enc.encode(sseFrame("error", { error: e.message, retryAfterSeconds: e.retryAfterSeconds }))
+            enc.encode(
+              sseFrame("error", {
+                error: e.message,
+                retryAfterSeconds: e.retryAfterSeconds
+              })
+            )
           );
         } else {
-          controller.enqueue(enc.encode(sseFrame("error", { error: String(e) })));
+          controller.enqueue(
+            enc.encode(sseFrame("error", { error: String(e) }))
+          );
         }
         controller.close();
       }
@@ -187,4 +226,3 @@ export async function POST(
     }
   });
 }
-

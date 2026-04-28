@@ -1,7 +1,11 @@
 import Database, { type Database as SQLDatabase } from "better-sqlite3";
 import { join } from "path";
 import { dbLogger as logger } from "..";
-import { alreadyClosedError, alreadyOpenError, noOpWhileClosedError } from "../errors";
+import {
+  alreadyClosedError,
+  alreadyOpenError,
+  noOpWhileClosedError
+} from "../errors";
 import { tbl } from "../physicalTables";
 import { Driver } from ".";
 
@@ -13,8 +17,13 @@ export const sqliteDriver: Driver = {
 
   getRawDBInstance: () => sql,
 
-  query<T = Record<string, unknown>>(sql_str: string, params: unknown[] = []): Promise<T[]> {
-    const converted = params.map((p) => (typeof p === "boolean" ? (p ? 1 : 0) : p));
+  query<T = Record<string, unknown>>(
+    sql_str: string,
+    params: unknown[] = []
+  ): Promise<T[]> {
+    const converted = params.map((p) =>
+      typeof p === "boolean" ? (p ? 1 : 0) : p
+    );
     const rows = sql.prepare(sql_str).all(...converted) as T[];
     return Promise.resolve(rows);
   },
@@ -44,39 +53,55 @@ export const sqliteDriver: Driver = {
     const H = tbl("messageHistory");
     const C = tbl("botConfig");
 
-    sql.prepare(`
+    sql
+      .prepare(
+        `
       CREATE TABLE IF NOT EXISTS ${M} (
         discord TEXT PRIMARY KEY NOT NULL,
         github  TEXT UNIQUE
       )
-    `).run();
+    `
+      )
+      .run();
 
-    sql.prepare(`
+    sql
+      .prepare(
+        `
       CREATE TABLE IF NOT EXISTS ${T} (
         slug       TEXT    PRIMARY KEY NOT NULL,
         role_id    TEXT,
         channel_id TEXT,
         is_active  INTEGER NOT NULL
       )
-    `).run();
+    `
+      )
+      .run();
 
-    sql.prepare(`
+    sql
+      .prepare(
+        `
       CREATE TABLE IF NOT EXISTS ${A} (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id    TEXT    NOT NULL,
         team_slug  TEXT    NOT NULL,
         perm_level INTEGER NOT NULL
       )
-    `).run();
+    `
+      )
+      .run();
 
-    sql.prepare(`
+    sql
+      .prepare(
+        `
       CREATE TABLE IF NOT EXISTS ${P} (
         slug      TEXT    PRIMARY KEY NOT NULL,
         name      TEXT    NOT NULL,
         team_slug TEXT    NOT NULL,
         is_active INTEGER NOT NULL
       )
-    `).run();
+    `
+      )
+      .run();
 
     try {
       sql.prepare("ALTER TABLE Teams ADD COLUMN github_repo TEXT").run();
@@ -84,7 +109,9 @@ export const sqliteDriver: Driver = {
       // Column already exists — safe to ignore
     }
 
-    sql.prepare(`
+    sql
+      .prepare(
+        `
       CREATE TABLE IF NOT EXISTS ${H} (
         id        INTEGER PRIMARY KEY AUTOINCREMENT,
         team_slug TEXT,
@@ -93,18 +120,24 @@ export const sqliteDriver: Driver = {
         timestamp TEXT,
         content   TEXT
       )
-    `).run();
+    `
+      )
+      .run();
 
-    sql.prepare(`
+    sql
+      .prepare(
+        `
       CREATE TABLE IF NOT EXISTS ${C} (
         key   TEXT PRIMARY KEY NOT NULL,
         value TEXT
       )
-    `).run();
+    `
+      )
+      .run();
 
-    const teamCols = sql
-      .prepare(`PRAGMA table_info(${T})`)
-      .all() as { name: string }[];
+    const teamCols = sql.prepare(`PRAGMA table_info(${T})`).all() as {
+      name: string;
+    }[];
     const teamColSet = new Set(teamCols.map((c) => c.name.toLowerCase()));
     if (!teamColSet.has("role_id")) {
       sql.exec(`ALTER TABLE ${T} ADD COLUMN role_id TEXT`);
@@ -113,7 +146,9 @@ export const sqliteDriver: Driver = {
       sql.exec(`ALTER TABLE ${T} ADD COLUMN channel_id TEXT`);
     }
     if (!teamColSet.has("is_disabled")) {
-      sql.exec(`ALTER TABLE ${T} ADD COLUMN is_disabled INTEGER NOT NULL DEFAULT 0`);
+      sql.exec(
+        `ALTER TABLE ${T} ADD COLUMN is_disabled INTEGER NOT NULL DEFAULT 0`
+      );
     }
 
     logger.verbose("Tables ready.");

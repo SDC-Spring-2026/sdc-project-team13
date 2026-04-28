@@ -72,11 +72,14 @@ export function ThemeToggle() {
       aria-label={clickLabel}
     >
       {/* Render a stable icon to avoid hydration mismatch */}
-      {!mounted ? <Monitor className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+      {!mounted ? (
+        <Monitor className="h-4 w-4" />
+      ) : (
+        <Icon className="h-4 w-4" />
+      )}
       <span className="hidden text-xs text-muted-foreground sm:inline">
         {mounted ? label : "Theme"}
       </span>
     </Button>
   );
 }
-

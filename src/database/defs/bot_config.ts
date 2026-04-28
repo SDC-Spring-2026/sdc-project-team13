@@ -8,4 +8,3 @@ export interface DatabaseBotConfigManager {
    */
   setBotConfig(key: string, value: string | null): Promise<void>;
 }
-

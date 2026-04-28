@@ -71,13 +71,7 @@ export function tbl(key: PhysicalTableKey): string {
 }
 
 export function snapshotTableKeys(): PhysicalTableKey[] {
-  return [
-    "teams",
-    "projects",
-    "members",
-    "teamAssociations",
-    "messageHistory"
-  ];
+  return ["teams", "projects", "members", "teamAssociations", "messageHistory"];
 }
 
 /** Display / JSON key: no SQL quoting. */

@@ -25,7 +25,8 @@ export function isPresident(member: GuildMember | null | undefined): boolean {
   return member.roles.cache.some((r) => presidentRoleIds.has(r.id));
 }
 
-export function isPresidentOrAdmin(member: GuildMember | null | undefined): boolean {
+export function isPresidentOrAdmin(
+  member: GuildMember | null | undefined
+): boolean {
   return isAdmin(member) || isPresident(member);
 }
-

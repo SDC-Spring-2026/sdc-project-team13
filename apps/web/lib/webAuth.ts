@@ -1,5 +1,11 @@
 import { cookies } from "next/headers";
-import { deleteSession, ensureWebSessionTable, getSessionUserId, hashSessionToken, openWebDb } from "./webDb";
+import {
+  deleteSession,
+  ensureWebSessionTable,
+  getSessionUserId,
+  hashSessionToken,
+  openWebDb
+} from "./webDb";
 
 export const SESSION_COOKIE = "cache_session";
 
@@ -24,4 +30,3 @@ export async function requireWebUser(): Promise<{ userId: string }> {
     else conn.close();
   }
 }
-

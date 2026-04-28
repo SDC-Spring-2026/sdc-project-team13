@@ -2,47 +2,55 @@ import { createNewLogger } from "../tools/log";
 
 const log = createNewLogger("github-app");
 
-const dynamicImport = new Function("s", "return import(s)") as <T>(s: string) => Promise<T>;
+const dynamicImport = new Function("s", "return import(s)") as <T>(
+  s: string
+) => Promise<T>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let installationOctokit: any = null;
 
 function getOrg(): string {
-    const org = process.env.GITHUB_ORG;
-    if (!org) throw new Error("GITHUB_ORG is not set in environment.");
-    return org;
+  const org = process.env.GITHUB_ORG;
+  if (!org) throw new Error("GITHUB_ORG is not set in environment.");
+  return org;
 }
 
 async function getAppOctokit() {
-    if (installationOctokit) return installationOctokit;
+  if (installationOctokit) return installationOctokit;
 
-    const appId = process.env.GITHUB_APP_ID;
-    const rawKey = process.env.GITHUB_APP_PRIVATE_KEY;
-    if (!appId || !rawKey) throw new Error("GITHUB_APP_ID or GITHUB_APP_PRIVATE_KEY is not set.");
+  const appId = process.env.GITHUB_APP_ID;
+  const rawKey = process.env.GITHUB_APP_PRIVATE_KEY;
+  if (!appId || !rawKey)
+    throw new Error("GITHUB_APP_ID or GITHUB_APP_PRIVATE_KEY is not set.");
 
-    // .env stores newlines as literal \n — convert back to actual newlines for the PEM parser
-    const privateKey = rawKey.replace(/\\n/g, "\n");
-    const org = getOrg();
+  // .env stores newlines as literal \n — convert back to actual newlines for the PEM parser
+  const privateKey = rawKey.replace(/\\n/g, "\n");
+  const org = getOrg();
 
-    const { App } = await dynamicImport<typeof import("octokit", { with: { "resolution-mode": "import" } })>("octokit");
-    const app = new App({ appId, privateKey });
+  const { App } =
+    await dynamicImport<
+      typeof import("octokit", { with: { "resolution-mode": "import" } })
+    >("octokit");
+  const app = new App({ appId, privateKey });
 
-    let installation;
-    try {
-        ({ data: installation } = await app.octokit.request(
-            "GET /orgs/{org}/installation",
-            { org }
-        ));
-    } catch {
-        throw new Error(
-            `GitHub App is not installed on org "${org}" (or GITHUB_ORG is wrong). ` +
-            `Install the app at https://github.com/organizations/${org}/settings/installations`
-        );
-    }
+  let installation;
+  try {
+    ({ data: installation } = await app.octokit.request(
+      "GET /orgs/{org}/installation",
+      { org }
+    ));
+  } catch {
+    throw new Error(
+      `GitHub App is not installed on org "${org}" (or GITHUB_ORG is wrong). ` +
+        `Install the app at https://github.com/organizations/${org}/settings/installations`
+    );
+  }
 
-    installationOctokit = await app.getInstallationOctokit(installation.id);
-    log.info(`GitHub App installation Octokit ready (installation ${installation.id}, org: ${org})`);
-    return installationOctokit;
+  installationOctokit = await app.getInstallationOctokit(installation.id);
+  log.info(
+    `GitHub App installation Octokit ready (installation ${installation.id}, org: ${org})`
+  );
+  return installationOctokit;
 }
 
 /**
@@ -51,82 +59,97 @@ async function getAppOctokit() {
  * @param displayName The project name shown as the repo's description in GitHub's UI.
  * Returns the new repo's HTML URL.
  */
-export async function createTeamRepo(repoName: string, displayName: string): Promise<string> {
-    const octokit = await getAppOctokit();
-    const org = getOrg();
+export async function createTeamRepo(
+  repoName: string,
+  displayName: string
+): Promise<string> {
+  const octokit = await getAppOctokit();
+  const org = getOrg();
 
-    const { data } = await octokit.request("POST /orgs/{org}/repos", {
-        org,
-        name: repoName,
-        description: displayName,
-        private: true,
-        auto_init: true,
-    });
+  const { data } = await octokit.request("POST /orgs/{org}/repos", {
+    org,
+    name: repoName,
+    description: displayName,
+    private: true,
+    auto_init: true
+  });
 
-    log.info(`Created repo ${org}/${repoName}: ${data.html_url}`);
-    return data.html_url as string;
+  log.info(`Created repo ${org}/${repoName}: ${data.html_url}`);
+  return data.html_url as string;
 }
 
 /**
  * Grants a GitHub user write (push) access to a team's repo.
  */
-export async function addRepoCollaborator(repoName: string, githubUsername: string): Promise<void> {
-    const octokit = await getAppOctokit();
-    const org = getOrg();
+export async function addRepoCollaborator(
+  repoName: string,
+  githubUsername: string
+): Promise<void> {
+  const octokit = await getAppOctokit();
+  const org = getOrg();
 
-    await octokit.request("PUT /repos/{owner}/{repo}/collaborators/{username}", {
-        owner: org,
-        repo: repoName,
-        username: githubUsername,
-        permission: "push",
-    });
+  await octokit.request("PUT /repos/{owner}/{repo}/collaborators/{username}", {
+    owner: org,
+    repo: repoName,
+    username: githubUsername,
+    permission: "push"
+  });
 
-    log.info(`Added collaborator ${githubUsername} → ${org}/${repoName} (write)`);
+  log.info(`Added collaborator ${githubUsername} → ${org}/${repoName} (write)`);
 }
 
 /**
  * Archives or unarchives a team's repository.
  */
-export async function setTeamRepoArchived(repoName: string, archived: boolean): Promise<void> {
-    const octokit = await getAppOctokit();
-    const org = getOrg();
+export async function setTeamRepoArchived(
+  repoName: string,
+  archived: boolean
+): Promise<void> {
+  const octokit = await getAppOctokit();
+  const org = getOrg();
 
-    await octokit.request("PATCH /repos/{owner}/{repo}", {
-        owner: org,
-        repo: repoName,
-        archived,
-    });
+  await octokit.request("PATCH /repos/{owner}/{repo}", {
+    owner: org,
+    repo: repoName,
+    archived
+  });
 
-    log.info(`Repo ${org}/${repoName} ${archived ? "archived" : "unarchived"}`);
+  log.info(`Repo ${org}/${repoName} ${archived ? "archived" : "unarchived"}`);
 }
 
 /**
  * Revokes a GitHub user's access to a team's repo.
  */
-export async function removeRepoCollaborator(repoName: string, githubUsername: string): Promise<void> {
-    const octokit = await getAppOctokit();
-    const org = getOrg();
+export async function removeRepoCollaborator(
+  repoName: string,
+  githubUsername: string
+): Promise<void> {
+  const octokit = await getAppOctokit();
+  const org = getOrg();
 
-    await octokit.request("DELETE /repos/{owner}/{repo}/collaborators/{username}", {
-        owner: org,
-        repo: repoName,
-        username: githubUsername,
-    });
+  await octokit.request(
+    "DELETE /repos/{owner}/{repo}/collaborators/{username}",
+    {
+      owner: org,
+      repo: repoName,
+      username: githubUsername
+    }
+  );
 
-    log.info(`Removed collaborator ${githubUsername} from ${org}/${repoName}`);
+  log.info(`Removed collaborator ${githubUsername} from ${org}/${repoName}`);
 }
 
 /**
  * Permanently deletes a team's repository from the org.
  */
 export async function deleteTeamRepo(repoName: string): Promise<void> {
-    const octokit = await getAppOctokit();
-    const org = getOrg();
+  const octokit = await getAppOctokit();
+  const org = getOrg();
 
-    await octokit.request("DELETE /repos/{owner}/{repo}", {
-        owner: org,
-        repo: repoName,
-    });
+  await octokit.request("DELETE /repos/{owner}/{repo}", {
+    owner: org,
+    repo: repoName
+  });
 
-    log.info(`Deleted repo ${org}/${repoName}`);
+  log.info(`Deleted repo ${org}/${repoName}`);
 }

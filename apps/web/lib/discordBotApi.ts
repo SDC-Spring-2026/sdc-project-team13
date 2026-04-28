@@ -16,21 +16,28 @@ function parseIdSet(raw: string | undefined): Set<string> {
   );
 }
 
-export async function getDiscordGuildMember(userId: string): Promise<GuildMember | null> {
+export async function getDiscordGuildMember(
+  userId: string
+): Promise<GuildMember | null> {
   loadEnvConfig(process.cwd());
   const guildId = process.env.DISCORD_GUILD_ID;
   const botToken = process.env.DISCORD_TOKEN;
   if (!guildId || !botToken) return null;
 
-  const r = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, {
-    headers: { authorization: `Bot ${botToken}` },
-    cache: "no-store"
-  });
+  const r = await fetch(
+    `https://discord.com/api/v10/guilds/${guildId}/members/${userId}`,
+    {
+      headers: { authorization: `Bot ${botToken}` },
+      cache: "no-store"
+    }
+  );
   if (!r.ok) return null;
   return (await r.json()) as GuildMember;
 }
 
-export async function getWebAdminFlags(userId: string): Promise<{ isAdmin: boolean; isPresident: boolean }> {
+export async function getWebAdminFlags(
+  userId: string
+): Promise<{ isAdmin: boolean; isPresident: boolean }> {
   const member = await getDiscordGuildMember(userId);
   const roles = new Set(member?.roles ?? []);
 
@@ -42,7 +49,9 @@ export async function getWebAdminFlags(userId: string): Promise<{ isAdmin: boole
   return { isAdmin, isPresident };
 }
 
-export async function getDiscordDisplayName(userId: string): Promise<string | null> {
+export async function getDiscordDisplayName(
+  userId: string
+): Promise<string | null> {
   const member = await getDiscordGuildMember(userId);
   const nick = member?.nick?.trim();
   if (nick) return nick;
@@ -52,4 +61,3 @@ export async function getDiscordDisplayName(userId: string): Promise<string | nu
   if (un) return un;
   return null;
 }
-

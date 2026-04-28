@@ -192,7 +192,9 @@ export async function getClubTeams(
           row.viewer_perm_level === null || row.viewer_perm_level === undefined
             ? null
             : Number(row.viewer_perm_level),
-        githubRepo: includeAdmin ? ((row.github_repo as string | null) ?? null) : null,
+        githubRepo: includeAdmin
+          ? ((row.github_repo as string | null) ?? null)
+          : null,
         messageCount: includeAdmin ? Number(row.message_count ?? 0) : null
       }));
     }
@@ -240,7 +242,11 @@ export async function getClubTeams(
   }
 }
 
-async function assertTeamMembership(conn: ReturnType<typeof openWebDb>, userId: string, teamSlug: string): Promise<number> {
+async function assertTeamMembership(
+  conn: ReturnType<typeof openWebDb>,
+  userId: string,
+  teamSlug: string
+): Promise<number> {
   if (conn.driver === "postgres") {
     const r = await conn.pool.query(
       `SELECT perm_level FROM ${tbl("teamAssociations")} WHERE user_id = $1 AND team_slug = $2 LIMIT 1`,
@@ -259,7 +265,10 @@ async function assertTeamMembership(conn: ReturnType<typeof openWebDb>, userId: 
   return Number(row.permLevel ?? 0);
 }
 
-export async function getTeamOverview(userId: string, teamSlug: string): Promise<TeamOverview> {
+export async function getTeamOverview(
+  userId: string,
+  teamSlug: string
+): Promise<TeamOverview> {
   loadEnvConfig(process.cwd());
   const conn = openWebDb();
   try {
@@ -287,9 +296,12 @@ export async function getTeamOverview(userId: string, teamSlug: string): Promise
         )
       ]);
 
-      const team = teamR.rows[0] as { slug: string; is_active: boolean; github_repo: string | null } | undefined;
+      const team = teamR.rows[0] as
+        | { slug: string; is_active: boolean; github_repo: string | null }
+        | undefined;
       if (!team) throw new Error("NOT_FOUND");
-      const projectName = (projectR.rows[0] as { name: string } | undefined)?.name ?? null;
+      const projectName =
+        (projectR.rows[0] as { name: string } | undefined)?.name ?? null;
 
       return {
         slug: team.slug,
@@ -305,8 +317,12 @@ export async function getTeamOverview(userId: string, teamSlug: string): Promise
     }
 
     const team = conn.db
-      .prepare(`SELECT slug, is_active as isActive, github_repo as githubRepo FROM ${tbl("teams")} WHERE slug = ? LIMIT 1`)
-      .get(teamSlug) as { slug: string; isActive: number; githubRepo: string | null } | undefined;
+      .prepare(
+        `SELECT slug, is_active as isActive, github_repo as githubRepo FROM ${tbl("teams")} WHERE slug = ? LIMIT 1`
+      )
+      .get(teamSlug) as
+      | { slug: string; isActive: number; githubRepo: string | null }
+      | undefined;
     if (!team) throw new Error("NOT_FOUND");
 
     const members = conn.db
@@ -319,7 +335,11 @@ export async function getTeamOverview(userId: string, teamSlug: string): Promise
         ORDER BY a.perm_level DESC, a.user_id ASC
         `
       )
-      .all(teamSlug) as Array<{ userId: string; permLevel: number; github: string | null }>;
+      .all(teamSlug) as Array<{
+      userId: string;
+      permLevel: number;
+      github: string | null;
+    }>;
 
     const project = conn.db
       .prepare(
@@ -404,4 +424,3 @@ export async function getTeamRecentMessages(
     else conn.close();
   }
 }
-

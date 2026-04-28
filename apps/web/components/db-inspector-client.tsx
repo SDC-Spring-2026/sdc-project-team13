@@ -12,7 +12,13 @@ import {
 import { AppShell } from "./app-shell";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "./ui/card";
 import { Separator } from "./ui/separator";
 
 type Snapshot =
@@ -118,7 +124,9 @@ export function DbInspectorClient() {
               <div>Loading…</div>
             ) : data && "error" in data ? (
               <div className="rounded-lg border bg-destructive/5 p-3 text-sm text-muted-foreground">
-                <div className="font-medium text-foreground">Snapshot error</div>
+                <div className="font-medium text-foreground">
+                  Snapshot error
+                </div>
                 <pre className="mt-2 whitespace-pre-wrap break-words rounded-md border bg-background p-3 text-xs">
                   {data.error}
                   {data.cwd ? `\ncwd: ${data.cwd}` : ""}
@@ -179,7 +187,8 @@ export function DbInspectorClient() {
             ) : null}
 
             <div className="text-xs text-muted-foreground">
-              Internal table name: <span className="font-mono">{tab || "—"}</span>
+              Internal table name:{" "}
+              <span className="font-mono">{tab || "—"}</span>
             </div>
 
             <Card className="overflow-hidden">
@@ -240,4 +249,3 @@ function formatCell(v: unknown): string {
   if (typeof v === "object") return JSON.stringify(v);
   return String(v);
 }
-

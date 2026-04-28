@@ -5,4 +5,3 @@ export function maskId(id: string, opts?: { start?: number; end?: number }) {
   if (t.length <= start + end + 3) return "…";
   return `${t.slice(0, start)}…${t.slice(-end)}`;
 }
-
