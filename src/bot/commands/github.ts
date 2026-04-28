@@ -53,6 +53,32 @@ export const githubCommand = {
         },
       ],
     },
+    {
+      type: 1, // SUB_COMMAND
+      name: "issues",
+      description: "List open issues from a repository",
+      options: [
+        {
+          type: 3,
+          name: "target",
+          description: "Repo name or URL — leave blank to use your team's linked repo",
+          required: false,
+        },
+      ],
+    },
+    {
+      type: 1, // SUB_COMMAND
+      name: "prs",
+      description: "List open pull requests from a repository",
+      options: [
+        {
+          type: 3,
+          name: "target",
+          description: "Repo name or URL — leave blank to use your team's linked repo",
+          required: false,
+        },
+      ],
+    },
   ],
 };
 
@@ -240,6 +266,80 @@ export async function handleGithub(interaction: ChatInputCommandInteraction) {
 
       logger.info(`${perPage} commits fetched for ${owner}/${repo}${branch ? `@${branch}` : ""} by ${interaction.user.tag}`);
       await interaction.editReply({embeds: [embed2]});
+      return;
+    }
+
+    /** ---------------------------------
+     *  /github issues → List open issues
+     * --------------------------------- */
+    if (sub === "issues") {
+      const { data: repoData } = await octo.repos.get({ owner, repo });
+      const { data: allItems } = await octo.issues.listForRepo({
+        owner,
+        repo,
+        state: "open",
+        per_page: 10
+      });
+
+      // GitHub's issues endpoint returns PRs too — filter them out
+      const issues = allItems.filter(i => !i.pull_request);
+
+      if (!issues.length) {
+        await interaction.editReply("No open issues found.");
+        return;
+      }
+
+      const lines = issues.map(i => {
+        const assignee = i.assignee ? ` — @${i.assignee.login}` : "";
+        return `**#${i.number}** [${i.title}](${i.html_url})${assignee}`;
+      });
+
+      const embed = new EmbedBuilder()
+        .setTitle(`Open Issues — ${owner}/${repo}`)
+        .setURL(`${repoData.html_url}/issues`)
+        .setColor(0xe4432d)
+        .setDescription(lines.join('\n'))
+        .setFooter({ text: `${issues.length} open issue${issues.length !== 1 ? 's' : ''} • Brought to you by Cache 🤖` })
+        .setThumbnail(repoData.owner.avatar_url);
+
+      logger.info(`Issues fetched for ${owner}/${repo} by ${interaction.user.tag}`);
+      await interaction.editReply({ embeds: [embed] });
+      return;
+    }
+
+    /** ---------------------------------
+     *  /github prs → List open PRs
+     * --------------------------------- */
+    if (sub === "prs") {
+      const { data: repoData } = await octo.repos.get({ owner, repo });
+      const { data: prs } = await octo.pulls.list({
+        owner,
+        repo,
+        state: "open",
+        per_page: 10
+      });
+
+      if (!prs.length) {
+        await interaction.editReply("No open pull requests found.");
+        return;
+      }
+
+      const lines = prs.map(pr => {
+        const author = pr.user ? ` — @${pr.user.login}` : "";
+        const base = pr.base.ref;
+        return `**#${pr.number}** [${pr.title}](${pr.html_url}) → \`${base}\`${author}`;
+      });
+
+      const embed = new EmbedBuilder()
+        .setTitle(`Open Pull Requests — ${owner}/${repo}`)
+        .setURL(`${repoData.html_url}/pulls`)
+        .setColor(0x8957e5)
+        .setDescription(lines.join('\n'))
+        .setFooter({ text: `${prs.length} open PR${prs.length !== 1 ? 's' : ''} • Brought to you by Cache 🤖` })
+        .setThumbnail(repoData.owner.avatar_url);
+
+      logger.info(`PRs fetched for ${owner}/${repo} by ${interaction.user.tag}`);
+      await interaction.editReply({ embeds: [embed] });
       return;
     }
 

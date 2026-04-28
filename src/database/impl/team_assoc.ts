@@ -21,6 +21,15 @@ export const db_team_assoc: DatabaseTeamAssocManager = {
     return rows.length > 0 && rows[0].perm_level === TeamPermissionLevel.LEADER;
   },
 
+  async getTeamLeaders(team_slug) {
+    const A = tbl("teamAssociations");
+    const rows = await driver().query<{ user_id: string }>(
+      `SELECT user_id FROM ${A} WHERE team_slug = ? AND perm_level = ?`,
+      [team_slug, TeamPermissionLevel.LEADER]
+    );
+    return rows.map(r => r.user_id);
+  },
+
   async addMemberToTeam(team_slug, discord_id, perm_level) {
     const A = tbl("teamAssociations");
     await driver().query(

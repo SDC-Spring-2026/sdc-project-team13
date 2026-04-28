@@ -127,5 +127,27 @@ export const db_teams: DatabaseTeamsManager = {
   async deleteTeam(team_slug) {
     const T = tbl("teams");
     await driver().query(`DELETE FROM ${T} WHERE slug = ?`, [team_slug]);
+  },
+
+  async getAllActiveTeamsWithProjects() {
+    const T = tbl("teams");
+    const P = tbl("projects");
+    return driver().query<{ slug: string; channel_id: string; github_repo: string | null; project_name: string | null }>(
+      `SELECT t.slug, t.channel_id, t.github_repo, p.name AS project_name
+       FROM ${T} t
+       LEFT JOIN ${P} p ON p.team_slug = t.slug AND p.is_active = ?
+       WHERE t.is_active = ?
+       ORDER BY t.slug`,
+      [true, true]
+    );
+  },
+
+  async getTeamLeader(team_slug) {
+    const A = tbl("teamAssociations");
+    const rows = await driver().query<{ user_id: string }>(
+      `SELECT user_id FROM ${A} WHERE team_slug = ? AND perm_level = ?`,
+      [team_slug, TeamPermissionLevel.LEADER]
+    );
+    return rows[0]?.user_id ?? null;
   }
 };

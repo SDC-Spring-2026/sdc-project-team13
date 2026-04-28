@@ -87,4 +87,13 @@ export interface DatabaseTeamsManager {
    * @returns If the team was successfully removed.
    */
   deleteTeam(team_slug: string): Promise<void>;
+  /**
+   * Returns all active teams joined with their primary active project name.
+   * Teams with no active project have project_name = null.
+   */
+  getAllActiveTeamsWithProjects(): Promise<{ slug: string; channel_id: string; github_repo: string | null; project_name: string | null }[]>;
+  /**
+   * Returns the Discord ID of the team's current leader, or null if none is set.
+   */
+  getTeamLeader(team_slug: string): Promise<string | null>;
 }
