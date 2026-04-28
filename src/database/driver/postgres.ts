@@ -98,6 +98,9 @@ export const postgresDriver: Driver = {
     await pool.query(
       `ALTER TABLE ${T} ADD COLUMN IF NOT EXISTS github_repo TEXT`
     );
+    await pool.query(
+      `ALTER TABLE ${T} ADD COLUMN IF NOT EXISTS is_disabled BOOLEAN NOT NULL DEFAULT FALSE`
+    );
 
     logger.verbose("Tables ready.");
   },

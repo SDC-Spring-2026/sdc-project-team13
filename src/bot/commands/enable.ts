@@ -46,7 +46,7 @@ export async function handleEnable(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    if (team.is_active) {
+    if (!team.is_disabled) {
         await interaction.reply({ flags: MessageFlags.Ephemeral, content: `**${group}** is already enabled.` });
         return;
     }
@@ -78,8 +78,7 @@ export async function handleEnable(interaction: ChatInputCommandInteraction) {
         ]);
     }
 
-    // Mark active in DB
-    await db.updateTeamActive(teamSlug, true);
+    await db.setTeamDisabled(teamSlug, false);
 
     // Unarchive GitHub repo — best-effort
     let githubNote = "";

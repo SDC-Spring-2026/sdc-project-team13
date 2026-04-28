@@ -6,6 +6,7 @@ export interface Teams {
   role_id: string;
   channel_id: string;
   is_active: boolean;
+  is_disabled: boolean;
   github_repo: string | null;
 }
 
@@ -81,6 +82,13 @@ export interface DatabaseTeamsManager {
    * @returns If this setting was successfully changed.
    */
   updateTeamActive(team_slug: string, is_active: boolean): Promise<void>;
+  /**
+   * Set the disabled flag on a team (toggled by /disable and /enable).
+   * Unlike is_active, this does not affect the team creation lifecycle.
+   * @param team_slug A team slug id.
+   * @param is_disabled Whether the team should be marked as disabled.
+   */
+  setTeamDisabled(team_slug: string, is_disabled: boolean): Promise<void>;
   /**
    * Remove a team from the database.
    * @param team_slug A team slug id.
