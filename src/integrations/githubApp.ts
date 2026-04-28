@@ -115,3 +115,18 @@ export async function removeRepoCollaborator(repoName: string, githubUsername: s
 
     log.info(`Removed collaborator ${githubUsername} from ${org}/${repoName}`);
 }
+
+/**
+ * Permanently deletes a team's repository from the org.
+ */
+export async function deleteTeamRepo(repoName: string): Promise<void> {
+    const octokit = await getAppOctokit();
+    const org = getOrg();
+
+    await octokit.request("DELETE /repos/{owner}/{repo}", {
+        owner: org,
+        repo: repoName,
+    });
+
+    log.info(`Deleted repo ${org}/${repoName}`);
+}
