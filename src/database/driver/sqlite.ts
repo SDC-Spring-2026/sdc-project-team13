@@ -42,6 +42,7 @@ export const sqliteDriver: Driver = {
     const A = tbl("teamAssociations");
     const P = tbl("projects");
     const H = tbl("messageHistory");
+    const C = tbl("botConfig");
 
     sql.prepare(`
       CREATE TABLE IF NOT EXISTS ${M} (
@@ -91,6 +92,13 @@ export const sqliteDriver: Driver = {
         scope     TEXT,
         timestamp TEXT,
         content   TEXT
+      )
+    `).run();
+
+    sql.prepare(`
+      CREATE TABLE IF NOT EXISTS ${C} (
+        key   TEXT PRIMARY KEY NOT NULL,
+        value TEXT
       )
     `).run();
 

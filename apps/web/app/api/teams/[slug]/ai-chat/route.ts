@@ -7,7 +7,6 @@ import { getTeamRecentMessages } from "../../../../../lib/appData";
 export const dynamic = "force-dynamic";
 
 function sseFrame(event: string, data: unknown) {
-  // SSE requires double newline between events.
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
@@ -38,6 +37,8 @@ function shapeTranscript(
   return out.join("\n");
 }
 
+type ReqBody = { prompt?: string };
+
 export async function POST(
   request: Request,
   ctx: { params: Promise<{ slug: string }> }
@@ -48,86 +49,46 @@ export async function POST(
   const { slug } = await ctx.params;
   const teamSlug = decodeURIComponent(slug);
 
+  const body = (await request.json().catch(() => null)) as ReqBody | null;
+  const promptRaw = typeof body?.prompt === "string" ? body.prompt.trim() : "";
+  if (!promptRaw) {
+    return NextResponse.json({ error: "Missing prompt." }, { status: 400 });
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
   if (!apiKey) {
-    return NextResponse.json(
-      { error: "Missing GEMINI_API_KEY in env." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Missing GEMINI_API_KEY in env." }, { status: 500 });
   }
 
-  const msgs = await getTeamRecentMessages(userId, teamSlug, 120);
+  const msgs = await getTeamRecentMessages(userId, teamSlug, 200);
   const transcript = shapeTranscript(msgs, {
-    maxLines: 100,
+    maxLines: 120,
     maxLineChars: 600,
-    maxTotalChars: 30_000
+    maxTotalChars: 45_000
   });
 
-  const prompt = [
-    "You are an assistant summarizing a Discord project team channel.",
-    "Write a high-signal summary for a dashboard. Be detailed and specific, not generic.",
-    "",
-    "Return markdown ONLY (no preamble). Use this exact structure and keep it crisp:",
-    "## Status",
-    "- (2-4 bullets)",
-    "",
-    "## Decisions",
-    "- (bullets, only if any)",
-    "",
-    "## Action items",
-    "- (bullets; include owner if inferable like @name; otherwise omit owner)",
-    "",
-    "## Risks / blockers",
-    "- (bullets, only if any)",
-    "",
-    "## Open questions",
-    "- (bullets, only if any)",
-    "",
-    "Constraints:",
-    "- Prefer concrete next steps over vague commentary.",
-    "- If the transcript seems jokey/off-topic, say so and focus on actionable items anyway.",
-    "- Do NOT repeat the team slug or restate the prompt.",
-    "",
-    "Be honest when the transcript lacks info. Do not invent facts.",
+  const system = [
+    "You are Cache, an assistant helping a Discord project team.",
+    "Be concrete and high-signal. Prefer bullet points, checklists, and short headings.",
+    "If you don't have evidence in the transcript, say so.",
+    "When asked for a plan, propose a short plan + next actions.",
+    "Use markdown formatting (headings, lists, code blocks when needed).",
+    "Avoid repetition. Do not restate the user's question verbatim unless necessary.",
     "",
     "Transcript (newest last):",
     transcript || "(no messages)"
   ].join("\n");
 
   const ai = new GoogleGenAI({ apiKey });
-  const accept = request.headers.get("accept") ?? "";
-  const wantsSse = accept.includes("text/event-stream");
-
-  // Fallback non-streaming JSON response.
-  if (!wantsSse) {
-    const resp = await ai.models.generateContent({
-      model,
-      contents: [{ role: "user", parts: [{ text: prompt }] }]
-    });
-    const text =
-      resp.text ??
-      resp.candidates?.[0]?.content?.parts
-        ?.map((p) => ("text" in p ? p.text : ""))
-        .join("") ??
-      "";
-    return NextResponse.json({
-      teamSlug,
-      model,
-      generatedAt: new Date().toISOString(),
-      summary: text.trim()
-    });
-  }
 
   const enc = new TextEncoder();
-  const generatedAt = new Date().toISOString();
-
+  const createdAt = new Date().toISOString();
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      controller.enqueue(enc.encode(sseFrame("meta", { teamSlug, model, generatedAt })));
+      controller.enqueue(enc.encode(sseFrame("meta", { teamSlug, model, createdAt })));
     },
     async pull(controller) {
-      // Only run once; after we finish, close. (We use pull to allow async.)
       try {
         if (request.signal.aborted) {
           controller.enqueue(enc.encode(sseFrame("error", { error: "aborted" })));
@@ -135,21 +96,20 @@ export async function POST(
           return;
         }
 
-        // @google/genai streaming: generateContentStream returns an async iterable.
-        // If this API shape changes, we'll fall back to one-shot and still stream the whole text as one delta.
         const anyModels = ai.models as unknown as {
           generateContentStream?: (args: unknown) => AsyncIterable<unknown>;
           generateContent?: (args: unknown) => Promise<unknown>;
         };
 
+        const contents = [
+          { role: "user", parts: [{ text: system }] },
+          { role: "user", parts: [{ text: `User (${userId}) asks: ${promptRaw}` }] }
+        ];
+
         try {
           if (typeof anyModels.generateContentStream === "function") {
-            const streamOrIter = anyModels.generateContentStream({
-              model,
-              contents: [{ role: "user", parts: [{ text: prompt }] }]
-            });
+            const streamOrIter = anyModels.generateContentStream({ model, contents });
 
-            // Some versions return a Promise or an object with a `.stream` async iterable.
             const iter =
               (await Promise.resolve(streamOrIter)) as unknown as
                 | AsyncIterable<unknown>
@@ -182,11 +142,7 @@ export async function POST(
             throw new Error("Streaming not supported");
           }
         } catch {
-          // Hard fallback: one-shot generation, then stream as a single delta.
-          const resp = (await anyModels.generateContent?.({
-            model,
-            contents: [{ role: "user", parts: [{ text: prompt }] }]
-          })) as {
+          const resp = (await anyModels.generateContent?.({ model, contents })) as {
             text?: string;
             candidates?: Array<{
               content?: { parts?: Array<{ text?: string }> };

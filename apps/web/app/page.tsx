@@ -17,12 +17,12 @@ export default function HomePage() {
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
-              C
+              S
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-semibold">Cache</div>
+              <div className="text-sm font-semibold">SDC Cache</div>
               <div className="text-xs text-muted-foreground">
-                A modern dashboard for your bot’s data
+                Software Development Club • UW–Madison
               </div>
             </div>
           </div>
@@ -33,12 +33,12 @@ export default function HomePage() {
           <div className="lg:col-span-3">
             <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
               <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-                Everything your bot knows,
-                <span className="text-primary"> in a fast dashboard.</span>
+                Your SDC teams,
+                <span className="text-primary"> organized.</span>
               </h1>
               <p className="mt-4 max-w-xl text-pretty text-base text-muted-foreground">
-                Sign in with Discord to browse your teams, roster, project info, and
-                saved context—cleanly organized and permission-aware.
+                Sign in with Discord to see your team dashboards, AI summaries, and
+                project activity—all permission-aware and built for SDC workflows.
               </p>
             </div>
 
@@ -48,9 +48,6 @@ export default function HomePage() {
                   Continue with Discord <ArrowRight className="h-4 w-4" />
                 </a>
               </Button>
-              <Button variant="outline" size="lg" asChild>
-                <a href="/db-inspector">DB inspector</a>
-              </Button>
             </div>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
@@ -58,18 +55,14 @@ export default function HomePage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="h-4 w-4 text-primary" />
-                    Auth + permissions
+                    Permission-aware
                   </CardTitle>
                   <CardDescription>
-                    Web access mirrors bot membership: only see teams you’re on.
+                    Only see what you’re allowed to see—mirrors team membership and roles.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground">
-                  Leader-only actions can be enforced from the same{" "}
-                  <span className="font-medium text-foreground">
-                    teamAssociations.perm_level
-                  </span>{" "}
-                  your bot uses.
+                  Admin-only tooling stays admin-only. No raw IDs or message history exposed in the normal UI.
                 </CardContent>
               </Card>
 
@@ -77,15 +70,14 @@ export default function HomePage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Database className="h-4 w-4 text-primary" />
-                    DB-backed UI
+                    AI + dashboards
                   </CardTitle>
                   <CardDescription>
-                    Teams, projects, members, roster, and message history.
+                    Auto summaries + a team assistant that streams responses.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground">
-                  This frontend reads from SQLite locally or Postgres in prod,
-                  using the same table naming rules as the bot.
+                  Summaries are generated from saved context server-side—clean output, fast iteration.
                 </CardContent>
               </Card>
             </div>
@@ -104,15 +96,14 @@ export default function HomePage() {
                 <div>
                   <div className="font-medium text-foreground">What you’ll get</div>
                   <ul className="mt-2 list-disc space-y-1 pl-5">
-                    <li>My teams (from team roster)</li>
-                    <li>Project info (from projects)</li>
-                    <li>Saved chat context (message history)</li>
+                    <li>Team dashboards</li>
+                    <li>Auto AI summary (markdown)</li>
+                    <li>Ask Cache (streaming assistant)</li>
                   </ul>
                 </div>
                 <div className="rounded-md border bg-muted/30 p-3">
-                  If you hit an env error, your web server isn’t loading the repo
-                  root <code className="rounded bg-muted px-1.5 py-0.5">.env</code>.
-                  This branch fixes that by loading env inside auth routes.
+                  If Discord name isn’t showing, set <code className="rounded bg-muted px-1.5 py-0.5">DISCORD_GUILD_ID</code>{" "}
+                  and ensure the bot token can read member info.
                 </div>
               </CardContent>
               <CardFooter>

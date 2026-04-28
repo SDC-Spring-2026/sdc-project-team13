@@ -40,14 +40,16 @@ export type PhysicalTableKey =
   | "teams"
   | "teamAssociations"
   | "projects"
-  | "messageHistory";
+  | "messageHistory"
+  | "botConfig";
 
 const LEGACY: Record<PhysicalTableKey, string> = {
   members: "Members",
   teams: "Teams",
   teamAssociations: "TeamAssociations",
   projects: "Projects",
-  messageHistory: "MessageHistory"
+  messageHistory: "MessageHistory",
+  botConfig: "BotConfig"
 };
 
 /** Lowercase names used by Supabase / Postgres public schema. */
@@ -56,7 +58,8 @@ const PG_PUBLIC: Record<PhysicalTableKey, string> = {
   teams: "teams",
   teamAssociations: "teamassociations",
   projects: "projects",
-  messageHistory: "messagehistory"
+  messageHistory: "messagehistory",
+  botConfig: "botconfig"
 };
 
 const SHORT: Record<PhysicalTableKey, string> = {
@@ -64,7 +67,8 @@ const SHORT: Record<PhysicalTableKey, string> = {
   teams: "teams",
   teamAssociations: "teamassociations",
   projects: "projects",
-  messageHistory: "messagehistory"
+  messageHistory: "messagehistory",
+  botConfig: "botconfig"
 };
 
 /**

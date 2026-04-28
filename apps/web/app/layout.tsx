@@ -1,5 +1,13 @@
 import "./globals.css";
 
+export const metadata = {
+  title: {
+    default: "SDC Cache",
+    template: "%s • SDC Cache"
+  },
+  description: "SDC Cache — a dashboard for Software Development Club teams and projects."
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>

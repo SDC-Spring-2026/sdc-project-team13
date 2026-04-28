@@ -10,7 +10,8 @@
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 235 86% 65%;
+    /* SDC / UW–Madison inspired (cardinal red) */
+    --primary: 0 84% 47%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -22,7 +23,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 235 86% 65%;
+    --ring: 0 84% 47%;
     --radius: 0.9rem;
   }
 
@@ -33,7 +34,7 @@
     --card-foreground: 210 40% 98%;
     --popover: 224 71.4% 4.1%;
     --popover-foreground: 210 40% 98%;
-    --primary: 235 86% 65%;
+    --primary: 0 84% 58%;
     --primary-foreground: 210 40% 98%;
     --secondary: 215 27.9% 16.9%;
     --secondary-foreground: 210 40% 98%;
@@ -45,7 +46,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
-    --ring: 235 86% 65%;
+    --ring: 0 84% 58%;
   }
 
   * {
@@ -54,6 +55,16 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.35) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.35) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: top center;
   }
 }
 

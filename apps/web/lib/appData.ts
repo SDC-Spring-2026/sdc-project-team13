@@ -12,6 +12,18 @@ export type MyTeam = {
   projectName: string | null;
 };
 
+export type ClubTeam = {
+  slug: string;
+  isActive: boolean;
+  projectName: string | null;
+  memberCount: number;
+  // The current viewer's permission on that team, if they're a member.
+  viewerPermLevel: number | null;
+  // Admin-only fields (can be null/omitted in UI for non-admin).
+  githubRepo: string | null;
+  messageCount: number | null;
+};
+
 export type TeamMember = {
   discordId: string;
   github: string | null;
@@ -120,6 +132,107 @@ export async function getMyTeams(userId: string): Promise<MyTeam[]> {
       memberCount: Number(row.member_count ?? 0),
       messageCount: Number(row.message_count ?? 0),
       projectName: row.project_name ?? null
+    }));
+  } finally {
+    if (conn.driver === "postgres") await conn.close();
+    else conn.close();
+  }
+}
+
+export async function getClubTeams(
+  userId: string,
+  opts: { includeAdminFields: boolean }
+): Promise<ClubTeam[]> {
+  loadEnvConfig(process.cwd());
+  const conn = openWebDb();
+  try {
+    const includeAdmin = Boolean(opts.includeAdminFields);
+
+    if (conn.driver === "postgres") {
+      const r = await conn.pool.query(
+        `
+        SELECT
+          t.slug,
+          t.is_active,
+          t.github_repo,
+          COALESCE(m.member_count, 0) AS member_count,
+          COALESCE(h.message_count, 0) AS message_count,
+          p.name AS project_name,
+          a.perm_level AS viewer_perm_level
+        FROM ${tbl("teams")} t
+        LEFT JOIN ${tbl("teamAssociations")} a
+          ON a.team_slug = t.slug AND a.user_id = $1
+        LEFT JOIN (
+          SELECT team_slug, COUNT(*)::int AS member_count
+          FROM ${tbl("teamAssociations")}
+          GROUP BY team_slug
+        ) m ON m.team_slug = t.slug
+        LEFT JOIN (
+          SELECT team_slug, COUNT(*)::int AS message_count
+          FROM ${tbl("messageHistory")}
+          GROUP BY team_slug
+        ) h ON h.team_slug = t.slug
+        LEFT JOIN (
+          SELECT DISTINCT ON (team_slug) team_slug, name
+          FROM ${tbl("projects")}
+          WHERE is_active = TRUE
+          ORDER BY team_slug, slug ASC
+        ) p ON p.team_slug = t.slug
+        ORDER BY t.slug ASC
+        `,
+        [userId]
+      );
+
+      return r.rows.map((row) => ({
+        slug: String(row.slug),
+        isActive: Boolean(row.is_active),
+        projectName: (row.project_name as string | null) ?? null,
+        memberCount: Number(row.member_count ?? 0),
+        viewerPermLevel:
+          row.viewer_perm_level === null || row.viewer_perm_level === undefined
+            ? null
+            : Number(row.viewer_perm_level),
+        githubRepo: includeAdmin ? ((row.github_repo as string | null) ?? null) : null,
+        messageCount: includeAdmin ? Number(row.message_count ?? 0) : null
+      }));
+    }
+
+    const rows = conn.db
+      .prepare(
+        `
+        SELECT
+          t.slug as slug,
+          t.is_active as is_active,
+          t.github_repo as github_repo,
+          (SELECT COUNT(*) FROM ${tbl("teamAssociations")} a2 WHERE a2.team_slug = t.slug) AS member_count,
+          (SELECT COUNT(*) FROM ${tbl("messageHistory")} h WHERE h.team_slug = t.slug) AS message_count,
+          (SELECT p.name FROM ${tbl("projects")} p WHERE p.team_slug = t.slug AND p.is_active = 1 ORDER BY p.slug ASC LIMIT 1) AS project_name,
+          (SELECT perm_level FROM ${tbl("teamAssociations")} a3 WHERE a3.team_slug = t.slug AND a3.user_id = ? LIMIT 1) AS viewer_perm_level
+        FROM ${tbl("teams")} t
+        ORDER BY t.slug ASC
+        `
+      )
+      .all(userId) as Array<{
+      slug: string;
+      is_active: number;
+      github_repo: string | null;
+      member_count: number;
+      message_count: number;
+      project_name: string | null;
+      viewer_perm_level: number | null;
+    }>;
+
+    return rows.map((row) => ({
+      slug: row.slug,
+      isActive: Boolean(row.is_active),
+      projectName: row.project_name ?? null,
+      memberCount: Number(row.member_count ?? 0),
+      viewerPermLevel:
+        row.viewer_perm_level === null || row.viewer_perm_level === undefined
+          ? null
+          : Number(row.viewer_perm_level),
+      githubRepo: includeAdmin ? (row.github_repo ?? null) : null,
+      messageCount: includeAdmin ? Number(row.message_count ?? 0) : null
     }));
   } finally {
     if (conn.driver === "postgres") await conn.close();
