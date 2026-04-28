@@ -167,6 +167,16 @@ export const db_teams: DatabaseTeamsManager = {
     invalidateTeam(team_slug, cached?.channel_id);
   },
 
+  async tombstoneTeam(team_slug) {
+    const T = tbl("teams");
+    const cached = dbCache.get<Teams | null>(`t:${team_slug}`);
+    await driver().query(
+      `UPDATE ${T} SET role_id = NULL, channel_id = NULL, github_repo = NULL, is_active = ?, is_disabled = ? WHERE slug = ?`,
+      [false, true, team_slug]
+    );
+    invalidateTeam(team_slug, cached?.channel_id);
+  },
+
   async getAllActiveTeamsWithProjects() {
     const T = tbl("teams");
     const P = tbl("projects");

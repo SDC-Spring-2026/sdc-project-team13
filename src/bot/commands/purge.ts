@@ -53,6 +53,11 @@ export async function handlePurge(interaction: ChatInputCommandInteraction) {
         return;
     }
 
+    if (!team.is_disabled) {
+        await interaction.reply({ flags: MessageFlags.Ephemeral, content: `**${group}** must be disabled before it can be purged. Run \`/disable\` first.` });
+        return;
+    }
+
     const confirmRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
             .setCustomId("purge_confirm")
@@ -124,10 +129,10 @@ export async function handlePurge(interaction: ChatInputCommandInteraction) {
         });
     }
 
-    // Remove from database
-    await db.deleteTeam(teamSlug).catch((e) => {
-        logger.error(`Failed to delete team record for "${teamSlug}": ${e instanceof Error ? e.message : String(e)}`);
-        notes.push("⚠️ Database record deletion failed.");
+    // Tombstone the DB row so requestNewTeamID never reuses this slug
+    await db.tombstoneTeam(teamSlug).catch((e) => {
+        logger.error(`Failed to tombstone team record for "${teamSlug}": ${e instanceof Error ? e.message : String(e)}`);
+        notes.push("⚠️ Database record update failed.");
     });
 
     logger.info(`Team "${teamSlug}" purged by ${interaction.user.tag}`);
