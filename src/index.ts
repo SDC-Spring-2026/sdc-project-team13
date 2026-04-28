@@ -10,24 +10,26 @@ import {
 } from "./bot/recordTeamMessages";
 import { MessageFlags } from "discord.js";
 
-const AI_PREFIX = "!";
+const ACTIVE_SESSION_TIMEOUT_MS = 2 * 60 * 1000;
 
-/** `!` at start, or after whitespace (e.g. "intro text !question"). */
-function extractAiPrompt(raw: string): string | null {
-  const t = raw.trim();
-  for (let k = 0; k < t.length; k++) {
-    if (t[k] !== AI_PREFIX) continue;
-    if (k > 0 && !/\s/.test(t[k - 1] ?? " ")) continue;
-    return t.slice(k + AI_PREFIX.length).trim();
-  }
-  return null;
+/** Channels where the bot is in active-conversation mode, mapped to their inactivity timer. */
+const activeChannels = new Map<string, NodeJS.Timeout>();
+
+/** Start or extend an active session for a channel. */
+function touchActiveSession(channelId: string): void {
+  const existing = activeChannels.get(channelId);
+  if (existing) clearTimeout(existing);
+  activeChannels.set(
+    channelId,
+    setTimeout(() => activeChannels.delete(channelId), ACTIVE_SESSION_TIMEOUT_MS)
+  );
 }
 
 function getAiHelpText() {
   return [
     "AI mode:",
-    `Start your message with \`${AI_PREFIX}\` to chat with Cache.`,
-    `Example: \`${AI_PREFIX} summarize what this bot can do\``,
+    "Mention me or reply to one of my messages to chat with Cache.",
+    "Example: `@Cache summarize what this bot can do`",
     "",
     "Hard commands use Discord slash commands such as:",
     getCommandListText()
@@ -103,8 +105,30 @@ logger.info("Starting the program...");
 
         if (!content) return;
 
-        const prompt = extractAiPrompt(content);
-        if (prompt === null) return;
+        const botId = client.user?.id;
+        const channelId = message.channelId;
+
+        const isMentioned = botId ? message.mentions.users.has(botId) : false;
+
+        let isReplyToBot = false;
+        if (!isMentioned && message.reference?.messageId) {
+          try {
+            const referenced = await message.channel.messages.fetch(message.reference.messageId);
+            isReplyToBot = referenced.author.id === botId;
+          } catch {
+            // Referenced message deleted or inaccessible — skip
+          }
+        }
+
+        const isActiveSession = activeChannels.has(channelId);
+
+        if (!isMentioned && !isReplyToBot && !isActiveSession) return;
+
+        // Any qualifying message extends the session window
+        touchActiveSession(channelId);
+
+        // Strip mentions so they don't appear in the prompt sent to the model
+        const prompt = content.replace(/<@!?\d+>/g, "").trim();
 
         if (!prompt) {
           await message.reply(getAiHelpText());
@@ -114,7 +138,9 @@ logger.info("Starting the program...");
         try {
           await message.channel.sendTyping();
           const sessionContext = await buildAiSessionContext(message);
-          const reply = await askCache(prompt, { sessionContext });
+          const member = await db.getMember(message.author.id).catch(() => null);
+          const displayName = member?.github ?? message.author.username;
+          const reply = await askCache(`${displayName}: ${prompt}`, { sessionContext });
           await message.reply(reply);
           void recordAiAssistantReply(message, reply).catch((err) =>
             botLog.warn("MessageHistory AI reply archive failed:", err as Error)
