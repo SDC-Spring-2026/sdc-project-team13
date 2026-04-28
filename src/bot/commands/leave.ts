@@ -61,7 +61,7 @@ export async function handleLeave(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  if (callerPerm === TeamPermissionLevel.LEADER) { // check if leader
+  if (callerPerm === TeamPermissionLevel.LEADER) {
     await interaction.reply({
       flags: MessageFlags.Ephemeral,
       content: "You are the leader of this team and cannot leave directly. Transfer leadership first using `/manage transfer`."

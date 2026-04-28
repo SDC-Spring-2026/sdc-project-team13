@@ -3,6 +3,7 @@ import { ChatInputCommandInteraction,
              ButtonBuilder,
              ButtonStyle,
              ComponentType,
+             Message,
              MessageFlags } from "discord.js";
 import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
@@ -43,7 +44,6 @@ export async function handleJoin(interaction: ChatInputCommandInteraction) {
 
     const formattedName = name.toLowerCase().replace(/\s+/g, '-');
 
-    // Resolve the team slug from the channel name
     const teamSlug = await resolveTeamSlug(guild, formattedName);
     if (!teamSlug) {
         await interaction.reply({ flags: MessageFlags.Ephemeral, content: `No group called **${name}** found!` });
@@ -56,14 +56,12 @@ export async function handleJoin(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    const teamRecord = await db.getTeam(teamSlug);
-    const channel = teamRecord ? guild.channels.cache.get(teamRecord.channel_id) : undefined;
-    if (!channel || !channel.isTextBased()) {
-        await interaction.reply({ flags: MessageFlags.Ephemeral, content: `No group called **${name}** found!` });
+    const leaderIds = await db.getTeamLeaders(teamSlug);
+    if (leaderIds.length === 0) {
+        await interaction.reply({ flags: MessageFlags.Ephemeral, content: `Could not find any leaders for **${name}**!` });
         return;
     }
 
-    // Build accept/decline buttons
     const accept = new ButtonBuilder()
         .setCustomId('join_accept')
         .setLabel('✅ Accept')
@@ -77,82 +75,100 @@ export async function handleJoin(interaction: ChatInputCommandInteraction) {
     const row = new ActionRowBuilder<ButtonBuilder>()
         .addComponents(accept, decline);
 
-    // Send the join request to the group channel
-    const requestMsg = await channel.send({
-        content: `📬 **${interaction.user}** wants to join **${name}**!`,
-        components: [row]
-    });
+    // DM each leader — only they can see and act on the request
+    const sentDMs: { message: Message }[] = [];
 
-    logger.info(`${interaction.user.tag} (${interaction.user.id}) sent join request to "${name}" (team: ${teamSlug})`);
+    for (const leaderId of leaderIds) {
+        try {
+            const leaderMember = await guild.members.fetch(leaderId);
+            const dm = await leaderMember.send({
+                content: `📬 **${interaction.user}** wants to join **${name}**!`,
+                components: [row]
+            });
+            sentDMs.push({ message: dm });
+        } catch (e) {
+            logger.warn(`Failed to DM leader ${leaderId} for join request to "${name}": ${e instanceof Error ? e.message : String(e)}`);
+        }
+    }
+
+    if (sentDMs.length === 0) {
+        await interaction.reply({ flags: MessageFlags.Ephemeral, content: `Could not reach any leaders for **${name}**. Try contacting them directly.` });
+        return;
+    }
+
+    logger.info(`${interaction.user.tag} (${interaction.user.id}) sent join request to "${name}" (team: ${teamSlug}), DMed ${sentDMs.length} leader(s)`);
     await interaction.reply({ flags: MessageFlags.Ephemeral, content: `✅ Join request sent to **${name}**!` });
 
-    // Wait for a button click — 3 day window
-    const collector = requestMsg.createMessageComponentCollector({
-        componentType: ComponentType.Button,
-        time: 259200000
-    });
+    let handled = false;
 
-    collector.on('collect', async (buttonInteraction) => {
-        const isLeader = await db.isTeamLeader(teamSlug, buttonInteraction.user.id);
-        if (!isLeader) {
-            await buttonInteraction.reply({
-                flags: MessageFlags.Ephemeral,
-                content: "Only the team leader can accept or decline join requests."
-            });
-            return;
-        }
+    const updateAllDMs = async (content: string, exclude?: string) => {
+        await Promise.all(
+            sentDMs
+                .filter(({ message }) => message.id !== exclude)
+                .map(({ message }) => message.edit({ content, components: [] }).catch(() => {}))
+        );
+    };
 
-        if (buttonInteraction.customId === 'join_accept') {
-            try {
-                await db.addMemberToTeam(teamSlug, interaction.user.id, TeamPermissionLevel.MEMBER);
+    for (const { message } of sentDMs) {
+        const collector = message.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+            time: 259200000
+        });
 
-                // Channel and role are named after the team slug
-                const role = guild.roles.cache.find(r => r.name === teamSlug);
-                if (role) {
-                    const member = await guild.members.fetch(interaction.user.id);
-                    await member.roles.add(role);
-                }
-
-                // Grant GitHub repo access — best-effort
-                const [joiningMember, team] = await Promise.all([
-                    db.getMember(interaction.user.id),
-                    db.getTeam(teamSlug)
-                ]);
-                if (joiningMember?.github && team?.github_repo) {
-                    await addRepoCollaborator(team.github_repo, joiningMember.github).catch((e) =>
-                        logger.error(`Failed to add GitHub collaborator for ${interaction.user.tag}: ${e instanceof Error ? e.message : String(e)}`)
-                    );
-                }
-
-                logger.info(`${interaction.user.tag} accepted into "${name}" (team: ${teamSlug}) by ${buttonInteraction.user.tag}`);
-                await buttonInteraction.update({
-                    content: `✅ **${interaction.user.username}** has been accepted into **${name}**!`,
-                    components: []
-                });
-            } catch (err) {
-                logger.error(`Failed to add ${interaction.user.tag} to "${name}": ${err instanceof Error ? err.message : String(err)}`);
-                await buttonInteraction.update({
-                    content: `❌ Failed to add **${interaction.user.username}** to **${name}**.`,
-                    components: []
-                });
+        collector.on('collect', async (buttonInteraction) => {
+            if (handled) {
+                await buttonInteraction.reply({ flags: MessageFlags.Ephemeral, content: "This request has already been handled." });
+                return;
             }
-        } else {
-            logger.info(`${interaction.user.tag}'s request to join "${name}" declined by ${buttonInteraction.user.tag}`);
-            await buttonInteraction.update({
-                content: `❌ **${interaction.user.username}**'s request to join **${name}** was declined.`,
-                components: []
-            });
-        }
-    });
+            handled = true;
 
-    // Remove buttons after 3 days if no response
-    collector.on('end', async (collected) => {
-        if (collected.size === 0) {
-            logger.warn(`Join request from ${interaction.user.tag} to "${name}" expired with no response`);
-            await requestMsg.edit({
-                content: `⏰ Join request from **${interaction.user.username}** expired.`,
-                components: []
-            });
-        }
-    });
+            if (buttonInteraction.customId === 'join_accept') {
+                try {
+                    await db.addMemberToTeam(teamSlug, interaction.user.id, TeamPermissionLevel.MEMBER);
+
+                    const role = guild.roles.cache.find(r => r.name === teamSlug);
+                    if (role) {
+                        const member = await guild.members.fetch(interaction.user.id);
+                        await member.roles.add(role);
+                    }
+
+                    const [joiningMember, team] = await Promise.all([
+                        db.getMember(interaction.user.id),
+                        db.getTeam(teamSlug)
+                    ]);
+                    if (joiningMember?.github && team?.github_repo) {
+                        await addRepoCollaborator(team.github_repo, joiningMember.github).catch((e) =>
+                            logger.error(`Failed to add GitHub collaborator for ${interaction.user.tag}: ${e instanceof Error ? e.message : String(e)}`)
+                        );
+                    }
+
+                    logger.info(`${interaction.user.tag} accepted into "${name}" (team: ${teamSlug}) by ${buttonInteraction.user.tag}`);
+                    const resultContent = `✅ **${interaction.user.username}** has been accepted into **${name}**!`;
+                    await buttonInteraction.update({ content: resultContent, components: [] });
+                    await updateAllDMs(resultContent, buttonInteraction.message.id);
+                } catch (err) {
+                    logger.error(`Failed to add ${interaction.user.tag} to "${name}": ${err instanceof Error ? err.message : String(err)}`);
+                    await buttonInteraction.update({
+                        content: `❌ Failed to add **${interaction.user.username}** to **${name}**.`,
+                        components: []
+                    });
+                }
+            } else {
+                logger.info(`${interaction.user.tag}'s request to join "${name}" declined by ${buttonInteraction.user.tag}`);
+                const resultContent = `❌ **${interaction.user.username}**'s request to join **${name}** was declined.`;
+                await buttonInteraction.update({ content: resultContent, components: [] });
+                await updateAllDMs(resultContent, buttonInteraction.message.id);
+            }
+        });
+
+        collector.on('end', async (collected) => {
+            if (!handled && collected.size === 0) {
+                logger.warn(`Join request from ${interaction.user.tag} to "${name}" expired with no response`);
+                await message.edit({
+                    content: `⏰ Join request from **${interaction.user.username}** expired.`,
+                    components: []
+                }).catch(() => {});
+            }
+        });
+    }
 }

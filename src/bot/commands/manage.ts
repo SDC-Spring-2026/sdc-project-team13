@@ -1,4 +1,5 @@
 import { ChatInputCommandInteraction, MessageFlags } from "discord.js";
+import { isGuildAdmin } from "./isGuildAdmin";
 import { db } from "../../database";
 import { resolveTeamSlug } from "./resolveTeam";
 import { TeamPermissionLevel } from "../../database/defs/team_assoc";
@@ -102,7 +103,7 @@ async function handleDescription(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  if (!(await db.isTeamLeader(teamSlug, interaction.user.id))) {
+  if (!isGuildAdmin(interaction) && !(await db.isTeamLeader(teamSlug, interaction.user.id))) {
     await interaction.reply({ flags: MessageFlags.Ephemeral, content: "Only the team leader can modify this project." });
     return;
   }
@@ -157,7 +158,7 @@ async function handleRename(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  if (!(await db.isTeamLeader(teamSlug, interaction.user.id))) {
+  if (!isGuildAdmin(interaction) && !(await db.isTeamLeader(teamSlug, interaction.user.id))) {
     await interaction.reply({ flags: MessageFlags.Ephemeral, content: "Only the team leader can rename the project." });
     return;
   }
@@ -207,7 +208,7 @@ async function handleTransfer(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  if (!(await db.isTeamLeader(teamSlug, interaction.user.id))) {
+  if (!isGuildAdmin(interaction) && !(await db.isTeamLeader(teamSlug, interaction.user.id))) {
     await interaction.reply({ flags: MessageFlags.Ephemeral, content: "Only the team leader can transfer leadership." });
     return;
   }
@@ -222,7 +223,11 @@ async function handleTransfer(interaction: ChatInputCommandInteraction) {
 
   try {
     await db.updateTeamMember(teamSlug, target.id, TeamPermissionLevel.LEADER);
-    await db.updateTeamMember(teamSlug, interaction.user.id, TeamPermissionLevel.MEMBER);
+    // Only step down if the caller was actually the leader
+    const callerPerm = await db.getMemberTeamPermission(teamSlug, interaction.user.id);
+    if (callerPerm === TeamPermissionLevel.LEADER) {
+      await db.updateTeamMember(teamSlug, interaction.user.id, TeamPermissionLevel.MEMBER);
+    }
 
     logger.info(`Leadership of "${group}" (team: ${teamSlug}) transferred from ${interaction.user.tag} to ${target.tag}`);
     await interaction.editReply(`✅ Leadership of **${group}** transferred to **${target.username}**.`);

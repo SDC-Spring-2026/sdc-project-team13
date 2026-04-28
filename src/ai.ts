@@ -1,11 +1,11 @@
-import { GoogleGenAI } from "@google/genai";
 import { CACHE_BOT_INSTRUCTIONS } from "./botInstructions";
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
+type GoogleGenAI = import("@google/genai", { with: { "resolution-mode": "import" } }).GoogleGenAI;
 let ai: GoogleGenAI | null = null;
 
-function getAiClient(): GoogleGenAI | null {
+async function getAiClient(): Promise<GoogleGenAI | null> {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -13,6 +13,7 @@ function getAiClient(): GoogleGenAI | null {
   }
 
   if (!ai) {
+    const { GoogleGenAI } = await import("@google/genai");
     ai = new GoogleGenAI({ apiKey });
   }
 
@@ -23,7 +24,7 @@ export async function askCache(
   prompt: string,
   options?: { sessionContext?: string }
 ): Promise<string> {
-  const client = getAiClient();
+  const client = await getAiClient();
 
   if (!client) {
     return "AI chat is not configured yet. Add `GEMINI_API_KEY` to your `.env` file.";
@@ -40,13 +41,25 @@ export async function askCache(
       ].join("\n")
     : prompt;
 
-  const response = await client.models.generateContent({
-    model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
-    contents,
-    config: {
-      systemInstruction: CACHE_BOT_INSTRUCTIONS
+  let response;
+  try {
+    response = await client.models.generateContent({
+      model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
+      contents,
+      config: {
+        systemInstruction: CACHE_BOT_INSTRUCTIONS
+      }
+    });
+  } catch (err) {
+    const raw = err instanceof Error ? err.message : String(err);
+    try {
+      const parsed = JSON.parse(raw) as { error?: { message?: string } };
+      if (parsed?.error?.message) return parsed.error.message;
+    } catch {
+      // Not a JSON payload — fall through and rethrow
     }
-  });
+    throw err;
+  }
 
   const text = response.text?.trim();
   return text && text.length > 0

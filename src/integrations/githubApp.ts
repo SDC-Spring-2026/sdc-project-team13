@@ -24,7 +24,7 @@ async function getAppOctokit() {
     const privateKey = rawKey.replace(/\\n/g, "\n");
     const org = getOrg();
 
-    const { App } = await dynamicImport<typeof import("octokit")>("octokit");
+    const { App } = await dynamicImport<typeof import("octokit", { with: { "resolution-mode": "import" } })>("octokit");
     const app = new App({ appId, privateKey });
 
     let installation;

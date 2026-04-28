@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, ChannelType, MessageFlags, PermissionFlagsBits } from "discord.js";
+import { ChatInputCommandInteraction, ChannelType, EmbedBuilder, MessageFlags, PermissionFlagsBits } from "discord.js";
 import { db } from "../../database";
 import { createNewLogger } from "../../tools/log";
 import { requireRegistered } from "./requireRegistered";
@@ -78,11 +78,21 @@ export async function handleCreate(interaction: ChatInputCommandInteraction) {
             permissionOverwrites: [
                 {
                     id: guild.roles.everyone,
-                    deny: [PermissionFlagsBits.SendMessages]
+                    deny: [
+                        PermissionFlagsBits.SendMessages,
+                        PermissionFlagsBits.SendMessagesInThreads,
+                        PermissionFlagsBits.CreatePublicThreads,
+                        PermissionFlagsBits.CreatePrivateThreads,
+                    ]
                 },
                 {
                     id: role,
-                    allow: [PermissionFlagsBits.SendMessages]
+                    allow: [
+                        PermissionFlagsBits.SendMessages,
+                        PermissionFlagsBits.SendMessagesInThreads,
+                        PermissionFlagsBits.CreatePublicThreads,
+                        PermissionFlagsBits.CreatePrivateThreads,
+                    ]
                 }
             ]
         });
@@ -101,20 +111,42 @@ export async function handleCreate(interaction: ChatInputCommandInteraction) {
     }
 
     // GitHub setup — best-effort: Discord team is already live if this fails
+    let repoUrl: string | null = null;
     try {
-        const repoUrl = await createTeamRepo(teamSlug, project);
+        repoUrl = await createTeamRepo(teamSlug, project);
         await db.setTeamRepo(teamSlug, teamSlug);
 
         const creatorMember = await db.getMember(interaction.user.id);
         if (creatorMember?.github) {
             await addRepoCollaborator(teamSlug, creatorMember.github);
         }
+    } catch (err) {
+        logger.error(`GitHub setup failed for team "${teamSlug}": ${err instanceof Error ? err.message : String(err)}`);
+    }
 
+    // Pin a welcome embed in the new channel
+    const embed = new EmbedBuilder()
+        .setTitle(project)
+        .setDescription(description)
+        .setColor(role.hexColor !== "#000000" ? role.hexColor : "#5865F2")
+        .addFields(
+            { name: "Team", value: teamSlug, inline: true },
+            { name: "Lead", value: `<@${interaction.user.id}>`, inline: true },
+            { name: "Role", value: `${role}`, inline: true },
+            { name: "GitHub Repo", value: repoUrl ? `[${teamSlug}](${repoUrl})` : "⚠️ Repo setup failed — contact an admin." }
+        )
+        .setTimestamp();
+
+    const welcomeMsg = await channel.send({ embeds: [embed] });
+    await welcomeMsg.pin().catch((e) =>
+        logger.warn(`Failed to pin welcome embed in ${channel.id}: ${e instanceof Error ? e.message : String(e)}`)
+    );
+
+    if (repoUrl) {
         await interaction.editReply(
             `✅ Project **${project}** created!\nChannel: ${channel}\nRole: ${role}\nRepo: ${repoUrl}\nYou've been assigned as the leader!`
         );
-    } catch (err) {
-        logger.error(`GitHub setup failed for team "${teamSlug}": ${err instanceof Error ? err.message : String(err)}`);
+    } else {
         await interaction.editReply(
             `✅ Project **${project}** created!\nChannel: ${channel}\nRole: ${role}\nYou've been assigned as the leader!\n⚠️ GitHub repo setup failed — contact an admin.`
         );
