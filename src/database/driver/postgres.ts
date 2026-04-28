@@ -43,6 +43,7 @@ export const postgresDriver: Driver = {
     const A = tbl("teamAssociations");
     const P = tbl("projects");
     const H = tbl("messageHistory");
+    const C = tbl("botConfig");
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ${M} (
@@ -86,6 +87,13 @@ export const postgresDriver: Driver = {
         scope     TEXT,
         timestamp TEXT,
         content   TEXT
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ${C} (
+        key   TEXT PRIMARY KEY,
+        value TEXT
       )
     `);
 

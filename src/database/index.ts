@@ -5,6 +5,7 @@ import { DatabaseMessagesManager } from "./defs/messages";
 import { DatabaseProjectManager } from "./defs/projects";
 import { DatabaseTeamAssocManager } from "./defs/team_assoc";
 import { DatabaseTeamsManager } from "./defs/teams";
+import { DatabaseBotConfigManager } from "./defs/bot_config";
 import { getDriver, driver } from "./driver";
 import { db_impl } from "./impl";
 export { getDriver };
@@ -19,7 +20,8 @@ export type DatabaseManager = DatabaseConfManager &
   DatabaseTeamsManager &
   DatabaseTeamAssocManager &
   DatabaseProjectManager &
-  DatabaseMessagesManager;
+  DatabaseMessagesManager &
+  DatabaseBotConfigManager;
 
 /**
  * The database object. Call `db.initiate()` then `db.setup()` before use.
