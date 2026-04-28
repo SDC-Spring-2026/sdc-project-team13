@@ -34,12 +34,11 @@ export async function getOctokit(): Promise<OctokitType> {
   // Only create one Octokit client (singleton)
   if (!octo) {
     // Dynamically import Octokit (ESM-safe)
-    const { Octokit } =
-      await dynamicImport<
-        typeof import("@octokit/rest", {
-          with: { "resolution-mode": "import" }
-        })
-      >("@octokit/rest");
+    const { Octokit } = await dynamicImport<
+      typeof import("@octokit/rest", {
+        with: { "resolution-mode": "import" }
+      })
+    >("@octokit/rest");
 
     // Get token from environment variables
     const token = process.env.GITHUB_TOKEN;
