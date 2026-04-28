@@ -9,22 +9,21 @@
     "apps/*"
   ],
   "scripts": {
-    "dev:lint": "esw --watch ./src ./apps/web",
-    "dev:bot": "tsx --watch --env-file=.env ./src/index.ts",
-    "dev:web": "next dev ./apps/web",
-    "dev:compile": "tsx --watch --env-file=.env ./src/index.ts",
-    "dev:compile:no-watch": "tsx --env-file=.env ./src/index.ts",
     "dev": "concurrently -c green,blue,magenta -n ESLint,BOT,WEB \"yarn dev:lint\" \"yarn dev:bot\" \"yarn dev:web\"",
-    "stylize": "prettier . --write",
+    "dev:bot": "tsx --watch --env-file=.env ./src/index.ts",
+    "dev:bot:once": "tsx --env-file=.env ./src/index.ts",
+    "dev:web": "next dev ./apps/web",
+    "dev:lint": "esw --watch ./src ./apps/web",
+    "dev:setup": "tsx --env-file=.env ./src/setup.ts",
+    "dev:register": "tsx --env-file=.env ./src/bot/registerCommands.ts",
     "lint": "eslint ./src ./apps/web",
+    "style": "prettier . --write",
     "compile": "tsc",
     "build:web": "next build ./apps/web",
     "build": "yarn lint && yarn compile && yarn build:web",
     "start": "node --env-file=.env ./dist/index.js",
     "start:web": "next start ./apps/web",
-    "dev:setup": "tsx --env-file=.env ./src/setup.ts",
-    "setup": "node --env-file=.env ./dist/setup.js",
-    "register:dev": "tsx --env-file=.env ./src/bot/registerCommands.ts"
+    "setup": "node --env-file=.env ./dist/setup.js"
   },
   "repository": {
     "type": "git",

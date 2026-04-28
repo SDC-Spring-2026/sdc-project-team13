@@ -53,7 +53,7 @@ yarn dev:setup
 To re-sync commands without re-running migrations:
 
 ```bash
-yarn register:dev
+yarn dev:register
 ```
 
 ## Running
@@ -63,7 +63,7 @@ yarn register:dev
 | `yarn dev:bot` | Bot in watch mode |
 | `yarn dev:web` | Next.js frontend at [localhost:3000](http://localhost:3000) |
 | `yarn dev` | ESLint + bot + web, all in parallel |
-| `yarn dev:compile:no-watch` | Bot, single run (no watch) |
+| `yarn dev:bot:once` | Bot, single run (no watch) |
 | `yarn build && yarn start` | Production build and start |
 
 ## Commands
@@ -134,13 +134,13 @@ apps/
 
 1. Create `src/bot/commands/<name>.ts` exporting `<name>Command` (definition) and `handle<Name>` (handler).
 2. Import and register both in `src/bot/commands/registry.ts`.
-3. Run `yarn dev:setup` (or `yarn register:dev` if the DB is already initialized).
+3. Run `yarn dev:setup` (or `yarn dev:register` if the DB is already initialized).
 
 ## Troubleshooting
 
 | Problem | Fix |
 | ------- | --- |
-| Commands not showing | Run `yarn dev:setup` or `yarn register:dev`; check `GUILD_ID`; confirm bot is in the guild. |
+| Commands not showing | Run `yarn dev:setup` or `yarn dev:register`; check `GUILD_ID`; confirm bot is in the guild. |
 | DB errors on first run | Run `yarn dev:setup` once to run migrations. |
 | AI not replying to pings | Set `GEMINI_API_KEY`; enable **Message Content Intent** on the bot; confirm the bot can read and send messages in the channel. |
 | `.env` not loading | Scripts use `--env-file=.env`; make sure the file exists at the repo root. |
