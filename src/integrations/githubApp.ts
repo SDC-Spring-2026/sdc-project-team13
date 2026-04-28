@@ -85,6 +85,22 @@ export async function addRepoCollaborator(repoName: string, githubUsername: stri
 }
 
 /**
+ * Archives or unarchives a team's repository.
+ */
+export async function setTeamRepoArchived(repoName: string, archived: boolean): Promise<void> {
+    const octokit = await getAppOctokit();
+    const org = getOrg();
+
+    await octokit.request("PATCH /repos/{owner}/{repo}", {
+        owner: org,
+        repo: repoName,
+        archived,
+    });
+
+    log.info(`Repo ${org}/${repoName} ${archived ? "archived" : "unarchived"}`);
+}
+
+/**
  * Revokes a GitHub user's access to a team's repo.
  */
 export async function removeRepoCollaborator(repoName: string, githubUsername: string): Promise<void> {
@@ -98,4 +114,19 @@ export async function removeRepoCollaborator(repoName: string, githubUsername: s
     });
 
     log.info(`Removed collaborator ${githubUsername} from ${org}/${repoName}`);
+}
+
+/**
+ * Permanently deletes a team's repository from the org.
+ */
+export async function deleteTeamRepo(repoName: string): Promise<void> {
+    const octokit = await getAppOctokit();
+    const org = getOrg();
+
+    await octokit.request("DELETE /repos/{owner}/{repo}", {
+        owner: org,
+        repo: repoName,
+    });
+
+    log.info(`Deleted repo ${org}/${repoName}`);
 }

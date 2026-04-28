@@ -150,10 +150,30 @@ export const db_teams: DatabaseTeamsManager = {
     invalidateTeam(team_slug, cached?.channel_id);
   },
 
+  async setTeamDisabled(team_slug, is_disabled) {
+    const T = tbl("teams");
+    await driver().query(`UPDATE ${T} SET is_disabled = ? WHERE slug = ?`, [
+      is_disabled,
+      team_slug
+    ]);
+    const cached = dbCache.get<Teams | null>(`t:${team_slug}`);
+    invalidateTeam(team_slug, cached?.channel_id);
+  },
+
   async deleteTeam(team_slug) {
     const T = tbl("teams");
     const cached = dbCache.get<Teams | null>(`t:${team_slug}`);
     await driver().query(`DELETE FROM ${T} WHERE slug = ?`, [team_slug]);
+    invalidateTeam(team_slug, cached?.channel_id);
+  },
+
+  async tombstoneTeam(team_slug) {
+    const T = tbl("teams");
+    const cached = dbCache.get<Teams | null>(`t:${team_slug}`);
+    await driver().query(
+      `UPDATE ${T} SET role_id = NULL, channel_id = NULL, github_repo = NULL, is_active = ?, is_disabled = ? WHERE slug = ?`,
+      [false, true, team_slug]
+    );
     invalidateTeam(team_slug, cached?.channel_id);
   },
 

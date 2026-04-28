@@ -11,6 +11,9 @@ import { leaveCommand, handleLeave } from "./leave";
 import { manageCommand, handleManage } from "./manage";
 import { githubCommand, handleGithub } from "./github";
 import { whoisCommand, handleWhois } from "./whois";
+import { disableCommand, handleDisable } from "./disable";
+import { enableCommand, handleEnable } from "./enable";
+import { purgeCommand, handlePurge } from "./purge";
 import { adminCommand, handleAdmin } from "./admin";
 
 /**
@@ -23,6 +26,8 @@ export const commandDefinitions = [
     createCommand, teamCommand, projectsCommand,
     groupCommand, joinCommand, kickCommand, leaveCommand,
     manageCommand, githubCommand, whoisCommand,
+    disableCommand, enableCommand,
+    purgeCommand,
     adminCommand
 ];
 export const commandHandlers = new Map([
@@ -38,5 +43,8 @@ export const commandHandlers = new Map([
     [manageCommand.name, handleManage],
     [githubCommand.name, handleGithub],
     [whoisCommand.name, handleWhois],
+    [disableCommand.name, handleDisable],
+    [enableCommand.name, handleEnable],
+    [purgeCommand.name, handlePurge],
     [adminCommand.name, handleAdmin]
 ]);

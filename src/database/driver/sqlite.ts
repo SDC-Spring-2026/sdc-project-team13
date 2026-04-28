@@ -112,6 +112,9 @@ export const sqliteDriver: Driver = {
     if (!teamColSet.has("channel_id")) {
       sql.exec(`ALTER TABLE ${T} ADD COLUMN channel_id TEXT`);
     }
+    if (!teamColSet.has("is_disabled")) {
+      sql.exec(`ALTER TABLE ${T} ADD COLUMN is_disabled INTEGER NOT NULL DEFAULT 0`);
+    }
 
     logger.verbose("Tables ready.");
   },

@@ -6,6 +6,7 @@ export interface Teams {
   role_id: string;
   channel_id: string;
   is_active: boolean;
+  is_disabled: boolean;
   github_repo: string | null;
 }
 
@@ -82,11 +83,24 @@ export interface DatabaseTeamsManager {
    */
   updateTeamActive(team_slug: string, is_active: boolean): Promise<void>;
   /**
+   * Set the disabled flag on a team (toggled by /disable and /enable).
+   * Unlike is_active, this does not affect the team creation lifecycle.
+   * @param team_slug A team slug id.
+   * @param is_disabled Whether the team should be marked as disabled.
+   */
+  setTeamDisabled(team_slug: string, is_disabled: boolean): Promise<void>;
+  /**
    * Remove a team from the database.
    * @param team_slug A team slug id.
    * @returns If the team was successfully removed.
    */
   deleteTeam(team_slug: string): Promise<void>;
+  /**
+   * Tombstone a purged team: nulls out channel_id, role_id, github_repo and marks
+   * the row inactive so the slug stays in the table and is never reused by requestNewTeamID.
+   * @param team_slug A team slug id.
+   */
+  tombstoneTeam(team_slug: string): Promise<void>;
   /**
    * Returns all active teams joined with their primary active project name.
    * Teams with no active project have project_name = null.
