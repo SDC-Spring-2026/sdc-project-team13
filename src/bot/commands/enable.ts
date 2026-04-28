@@ -59,6 +59,7 @@ export async function handleEnable(interaction: ChatInputCommandInteraction) {
         await channel.permissionOverwrites.set([
             {
                 id: guild.roles.everyone,
+                allow: [PermissionFlagsBits.ViewChannel],
                 deny: [
                     PermissionFlagsBits.SendMessages,
                     PermissionFlagsBits.SendMessagesInThreads,
