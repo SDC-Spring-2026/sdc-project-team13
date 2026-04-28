@@ -20,7 +20,7 @@
     "style": "prettier . --write",
     "compile": "tsc",
     "build:web": "next build ./apps/web",
-    "build": "yarn lint && yarn compile && yarn build:web",
+    "build": "yarn style && yarn lint && yarn compile && yarn build:web",
     "start": "node --env-file=.env ./dist/index.js",
     "start:web": "next start ./apps/web",
     "setup": "node --env-file=.env ./dist/setup.js"
