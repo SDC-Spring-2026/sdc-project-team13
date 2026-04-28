@@ -22,33 +22,31 @@ const logger = createNewLogger("setup");
 
   /// Discord Commands
 
-  // We dont have production steps for setup yet, so we will skip if so...
+  const token = process.env.DISCORD_TOKEN;
+  const clientId = process.env.CLIENT_ID;
 
-  if (process.env.NODE_ENV == "production") {
-    logger.warn(
-      "Currently no setup steps for discord commands in prod environment. Will be later!!"
-    );
+  if (!token || !clientId) {
+    logger.error("Missing DISCORD_TOKEN or CLIENT_ID: cannot register commands.");
+    process.exit(1);
+  }
+
+  const rest = new REST({ version: "10" }).setToken(token);
+
+  if (process.env.NODE_ENV === "production") {
+    // Global commands propagate to every server the bot is in (~1 hour delay).
+    logger.info("Registering commands globally (production)...");
+    await rest.put(Routes.applicationCommands(clientId), { body: commandDefinitions });
+    logger.info("Successfully registered global commands. Changes may take up to 1 hour to propagate.");
   } else {
-    logger.info("Registering commands for test guild...");
-
-    const token = process.env.DISCORD_TOKEN;
-    const clientId = process.env.CLIENT_ID;
     const guildId = process.env.GUILD_ID;
-
-    // Check if all required environment variables are set
-    if (!token || !clientId || !guildId) {
-      console.error("Missing required discord bot environment variables :(");
+    if (!guildId) {
+      logger.error("Missing GUILD_ID: cannot register guild commands for dev environment.");
       process.exit(1);
     }
 
-    // Create a new REST client
-    const rest = new REST({ version: "10" }).setToken(token);
-
-    // Guild Commands for dev environment that propogate instantly
-    await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
-      body: commandDefinitions
-    });
-
+    // Guild commands propagate instantly and are scoped to a single server.
+    logger.info("Registering commands for test guild (dev)...");
+    await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commandDefinitions });
     logger.info("Successfully registered commands for test server.");
   }
 
