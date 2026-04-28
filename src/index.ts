@@ -130,8 +130,12 @@ logger.info("Starting the program...");
         // Strip mentions so they don't appear in the prompt sent to the model
         const prompt = content.replace(/<@!?\d+>/g, "").trim();
 
+        const respond = isActiveSession && !isMentioned && !isReplyToBot
+          ? (text: string) => message.channel.send(text)
+          : (text: string) => message.reply(text);
+
         if (!prompt) {
-          await message.reply(getAiHelpText());
+          await respond(getAiHelpText());
           return;
         }
 
@@ -141,15 +145,13 @@ logger.info("Starting the program...");
           const member = await db.getMember(message.author.id).catch(() => null);
           const displayName = member?.github ?? message.author.username;
           const reply = await askCache(`${displayName}: ${prompt}`, { sessionContext });
-          await message.reply(reply);
+          await respond(reply);
           void recordAiAssistantReply(message, reply).catch((err) =>
             botLog.warn("MessageHistory AI reply archive failed:", err as Error)
           );
         } catch (err) {
           botLog.error("Error during AI reply:", err as Error);
-          await message.reply(
-            "AI chat failed. Check your Gemini API key and try again."
-          );
+          await respond("AI chat failed. Check your Gemini API key and try again.");
         }
       });
     })
