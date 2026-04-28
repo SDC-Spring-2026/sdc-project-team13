@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { requireWebUser } from "../../../../../lib/webAuth";
 import { getTeamRecentMessages } from "../../../../../lib/appData";
+import {
+  GeminiAllKeysRateLimitedError,
+  withGeminiKeyRotation
+} from "../../../../../lib/geminiKeys";
 
 export const dynamic = "force-dynamic";
 
@@ -48,14 +52,7 @@ export async function POST(
   const { slug } = await ctx.params;
   const teamSlug = decodeURIComponent(slug);
 
-  const apiKey = process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "Missing GEMINI_API_KEY in env." },
-      { status: 500 }
-    );
-  }
 
   const msgs = await getTeamRecentMessages(userId, teamSlug, 120);
   const transcript = shapeTranscript(msgs, {
@@ -68,7 +65,11 @@ export async function POST(
     "You are an assistant summarizing a Discord project team channel.",
     "Write a high-signal summary for a dashboard. Be detailed and specific, not generic.",
     "",
-    "Return markdown ONLY (no preamble). Use this exact structure and keep it crisp:",
+    "Return MARKDOWN ONLY (no preamble).",
+    "You MUST use these exact headings (including the leading `##`) and you MUST use `- ` bullets under each heading.",
+    "Do NOT write paragraphs: everything should be bullets, except a single short sentence if absolutely needed.",
+    "",
+    "Use this exact structure and keep it crisp:",
     "## Status",
     "- (2-4 bullets)",
     "",
@@ -88,6 +89,7 @@ export async function POST(
     "- Prefer concrete next steps over vague commentary.",
     "- If the transcript seems jokey/off-topic, say so and focus on actionable items anyway.",
     "- Do NOT repeat the team slug or restate the prompt.",
+    "- If you start to write plain text without markdown, STOP and rewrite it as the required markdown structure.",
     "",
     "Be honest when the transcript lacks info. Do not invent facts.",
     "",
@@ -95,28 +97,42 @@ export async function POST(
     transcript || "(no messages)"
   ].join("\n");
 
-  const ai = new GoogleGenAI({ apiKey });
   const accept = request.headers.get("accept") ?? "";
   const wantsSse = accept.includes("text/event-stream");
 
   // Fallback non-streaming JSON response.
   if (!wantsSse) {
-    const resp = await ai.models.generateContent({
-      model,
-      contents: [{ role: "user", parts: [{ text: prompt }] }]
-    });
-    const text =
-      resp.text ??
-      resp.candidates?.[0]?.content?.parts
-        ?.map((p) => ("text" in p ? p.text : ""))
-        .join("") ??
-      "";
-    return NextResponse.json({
-      teamSlug,
-      model,
-      generatedAt: new Date().toISOString(),
-      summary: text.trim()
-    });
+    try {
+      const text = await withGeminiKeyRotation(async (apiKey) => {
+        const ai = new GoogleGenAI({ apiKey });
+        const resp = await ai.models.generateContent({
+          model,
+          contents: [{ role: "user", parts: [{ text: prompt }] }]
+        });
+        return (
+          resp.text ??
+          resp.candidates?.[0]?.content?.parts
+            ?.map((p) => ("text" in p ? p.text : ""))
+            .join("") ??
+          ""
+        ).trim();
+      });
+
+      return NextResponse.json({
+        teamSlug,
+        model,
+        generatedAt: new Date().toISOString(),
+        summary: text
+      });
+    } catch (e) {
+      if (e instanceof GeminiAllKeysRateLimitedError) {
+        return NextResponse.json(
+          { error: e.message },
+          { status: 429, headers: { "retry-after": String(e.retryAfterSeconds) } }
+        );
+      }
+      return NextResponse.json({ error: String(e) }, { status: 500 });
+    }
   }
 
   const enc = new TextEncoder();
@@ -135,74 +151,92 @@ export async function POST(
           return;
         }
 
-        // @google/genai streaming: generateContentStream returns an async iterable.
-        // If this API shape changes, we'll fall back to one-shot and still stream the whole text as one delta.
-        const anyModels = ai.models as unknown as {
-          generateContentStream?: (args: unknown) => AsyncIterable<unknown>;
-          generateContent?: (args: unknown) => Promise<unknown>;
-        };
+        await withGeminiKeyRotation(async (apiKey) => {
+          const ai = new GoogleGenAI({ apiKey });
+          // @google/genai streaming: generateContentStream returns an async iterable.
+          // If this API shape changes, we'll fall back to one-shot and still stream the whole text as one delta.
+          const anyModels = ai.models as unknown as {
+            generateContentStream?: (args: unknown) => AsyncIterable<unknown>;
+            generateContent?: (args: unknown) => Promise<unknown>;
+          };
 
-        try {
-          if (typeof anyModels.generateContentStream === "function") {
-            const streamOrIter = anyModels.generateContentStream({
-              model,
-              contents: [{ role: "user", parts: [{ text: prompt }] }]
-            });
+          try {
+            if (typeof anyModels.generateContentStream === "function") {
+              const streamOrIter = anyModels.generateContentStream({
+                model,
+                contents: [{ role: "user", parts: [{ text: prompt }] }]
+              });
 
-            // Some versions return a Promise or an object with a `.stream` async iterable.
-            const iter =
-              (await Promise.resolve(streamOrIter)) as unknown as
-                | AsyncIterable<unknown>
-                | { stream?: AsyncIterable<unknown> };
+              // Some versions return a Promise or an object with a `.stream` async iterable.
+              const iter =
+                (await Promise.resolve(streamOrIter)) as unknown as
+                  | AsyncIterable<unknown>
+                  | { stream?: AsyncIterable<unknown> };
 
-            const source =
-              typeof (iter as AsyncIterable<unknown>)?.[Symbol.asyncIterator] === "function"
-                ? (iter as AsyncIterable<unknown>)
-                : (iter as { stream?: AsyncIterable<unknown> }).stream;
+              const source =
+                typeof (iter as AsyncIterable<unknown>)?.[Symbol.asyncIterator] === "function"
+                  ? (iter as AsyncIterable<unknown>)
+                  : (iter as { stream?: AsyncIterable<unknown> }).stream;
 
-            if (source) {
-              for await (const chunk of source) {
-                if (request.signal.aborted) break;
-                const c = chunk as {
-                  text?: string;
-                  candidates?: Array<{
-                    content?: { parts?: Array<{ text?: string }> };
-                  }>;
-                };
-                const delta =
-                  c.text ??
-                  c.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
-                  "";
-                if (delta) controller.enqueue(enc.encode(sseFrame("delta", { delta })));
+              if (source) {
+                for await (const chunk of source) {
+                  if (request.signal.aborted) break;
+                  const c = chunk as {
+                    text?: string;
+                    candidates?: Array<{
+                      content?: { parts?: Array<{ text?: string }> };
+                    }>;
+                  };
+                  const delta =
+                    c.text ??
+                    c.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
+                    "";
+                  if (delta) controller.enqueue(enc.encode(sseFrame("delta", { delta })));
+                }
+              } else {
+                throw new Error("Gemini stream is not async iterable");
               }
             } else {
-              throw new Error("Gemini stream is not async iterable");
+              throw new Error("Streaming not supported");
             }
-          } else {
-            throw new Error("Streaming not supported");
+          } catch (e) {
+          const msg = String((e as Error)?.message ?? e);
+          // Don't swallow quota / rate limit errors: let the key-rotation wrapper retry with another key.
+          if (msg.includes("RESOURCE_EXHAUSTED") || msg.includes("Quota exceeded") || msg.includes("429")) {
+            throw e;
           }
-        } catch {
-          // Hard fallback: one-shot generation, then stream as a single delta.
-          const resp = (await anyModels.generateContent?.({
-            model,
-            contents: [{ role: "user", parts: [{ text: prompt }] }]
-          })) as {
-            text?: string;
-            candidates?: Array<{
-              content?: { parts?: Array<{ text?: string }> };
-            }>;
-          };
-          const text =
-            resp?.text ??
-            resp?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
-            "";
-          if (text) controller.enqueue(enc.encode(sseFrame("delta", { delta: text })));
-        }
+
+            // Hard fallback: one-shot generation, then stream as a single delta.
+            const resp = (await anyModels.generateContent?.({
+              model,
+              contents: [{ role: "user", parts: [{ text: prompt }] }]
+            })) as {
+              text?: string;
+              candidates?: Array<{
+                content?: { parts?: Array<{ text?: string }> };
+              }>;
+            };
+
+            const text =
+              resp?.text ??
+              resp?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
+              "";
+            if (text) controller.enqueue(enc.encode(sseFrame("delta", { delta: text })));
+          }
+
+          return true;
+        });
 
         controller.enqueue(enc.encode(sseFrame("done", { ok: true })));
         controller.close();
       } catch (e) {
-        controller.enqueue(enc.encode(sseFrame("error", { error: String(e) })));
+        if (e instanceof GeminiAllKeysRateLimitedError) {
+          controller.enqueue(
+            enc.encode(sseFrame("error", { error: e.message, retryAfterSeconds: e.retryAfterSeconds }))
+          );
+        } else {
+          controller.enqueue(enc.encode(sseFrame("error", { error: String(e) })));
+        }
         controller.close();
       }
     }

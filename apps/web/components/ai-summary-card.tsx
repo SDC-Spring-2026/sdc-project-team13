@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { Markdown } from "./markdown";
+import { StreamingBar } from "./ui/streaming-bar";
 
 type Props = {
   teamSlug: string;
@@ -29,12 +30,25 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return Boolean(v) && typeof v === "object";
 }
 
+function parseRetryAfterSeconds(txt: string): number | null {
+  // Common shapes we see from Gemini errors:
+  // - `Please retry in 37.6s.`
+  // - `"retryDelay":"37s"`
+  const m1 = txt.match(/retry in\s+(\d+(?:\.\d+)?)s/i);
+  if (m1) return Math.max(1, Math.ceil(Number(m1[1])));
+  const m2 = txt.match(/"retryDelay"\s*:\s*"(\d+)s"/i);
+  if (m2) return Math.max(1, Number(m2[1]));
+  return null;
+}
+
 export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compactHeader = true }: Props) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ApiResp | null>(null);
   const [streamText, setStreamText] = useState<string>("");
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [cooldownUntilMs, setCooldownUntilMs] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const autoRanRef = useRef(false);
 
   const canShow = useMemo(() => {
     if (data && "summary" in data && data.summary) return true;
@@ -45,7 +59,20 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
     return () => abortRef.current?.abort();
   }, []);
 
+  useEffect(() => {
+    // New team => allow auto-run again.
+    autoRanRef.current = false;
+    setCooldownUntilMs(null);
+  }, [teamSlug]);
+
   const run = useCallback(async () => {
+    const now = Date.now();
+    if (cooldownUntilMs && now < cooldownUntilMs) {
+      const secs = Math.max(1, Math.ceil((cooldownUntilMs - now) / 1000));
+      setData({ error: `Rate limited. Please retry in ~${secs}s.` });
+      return;
+    }
+
     setLoading(true);
     abortRef.current?.abort();
     const ac = new AbortController();
@@ -65,6 +92,16 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
 
       if (!r.ok) {
         const txt = await r.text().catch(() => "");
+        if (r.status === 429) {
+          const retryAfterHeader = r.headers.get("retry-after");
+          const retryAfter =
+            (retryAfterHeader ? Number(retryAfterHeader) : NaN) ||
+            parseRetryAfterSeconds(txt) ||
+            30;
+          setCooldownUntilMs(Date.now() + retryAfter * 1000);
+          setData({ error: `Rate limited (429). Please retry in ~${retryAfter}s.` });
+          return;
+        }
         setData({ error: `AI summary failed (${r.status}): ${txt.slice(0, 500)}` });
         return;
       }
@@ -128,6 +165,8 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
               isRecord(payload) && payload.error !== undefined
                 ? String(payload.error)
                 : "Unknown error";
+            const retryAfter = parseRetryAfterSeconds(err);
+            if (retryAfter) setCooldownUntilMs(Date.now() + retryAfter * 1000);
             setData({ error: err });
           } else if (ev === "done") {
             // finalize into data so we can keep it if user regenerates
@@ -154,10 +193,14 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
 
   useEffect(() => {
     if (!auto) return;
-    // Only auto-run once when empty.
+    if (loading) return;
+    // Only auto-run once when empty; otherwise this can loop because run() clears state.
+    if (autoRanRef.current) return;
     if (data || streamText) return;
+    if (cooldownUntilMs && Date.now() < cooldownUntilMs) return;
+    autoRanRef.current = true;
     void run();
-  }, [auto, data, run, streamText]);
+  }, [auto, cooldownUntilMs, data, loading, run, streamText]);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -167,6 +210,10 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
   const shownSummary =
     (data && "summary" in data ? data.summary : "") || streamText;
   const shownMeta = data && "summary" in data ? data.meta : meta;
+  const cooldownLeftSeconds = useMemo(() => {
+    if (!cooldownUntilMs) return 0;
+    return Math.max(0, Math.ceil((cooldownUntilMs - Date.now()) / 1000));
+  }, [cooldownUntilMs, data, streamText, loading]);
 
   const TopRow = (
     <>
@@ -199,8 +246,14 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
               Stop
             </Button>
           ) : null}
-          <Button variant="outline" className="h-9" onClick={() => void run()} disabled={loading}>
-            {loading ? "Generating…" : "Refresh"}
+          <Button
+            variant="outline"
+            className="h-9"
+            onClick={() => void run()}
+            disabled={loading || cooldownLeftSeconds > 0}
+            title={cooldownLeftSeconds > 0 ? `Rate limited. Try again in ~${cooldownLeftSeconds}s.` : "Generate"}
+          >
+            {loading ? "Generating…" : cooldownLeftSeconds > 0 ? `Retry in ${cooldownLeftSeconds}s` : "Refresh"}
           </Button>
         </div>
       </div>
@@ -213,16 +266,17 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
     <>
       {embedded ? TopRow : null}
 
-      {loading && !streamText && (
-          <div className="space-y-3">
-            <div className="h-2 w-40 animate-pulse rounded-full bg-muted" />
-            <div className="space-y-2">
-              <div className="h-3 w-full animate-pulse rounded bg-muted" />
-              <div className="h-3 w-11/12 animate-pulse rounded bg-muted" />
-              <div className="h-3 w-10/12 animate-pulse rounded bg-muted" />
-            </div>
+      {loading && !streamText ? (
+        <div className="space-y-4">
+          <StreamingBar active label="Generating summary" />
+          <div className="space-y-2">
+            <div className="h-3 w-10/12 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-full animate-pulse rounded bg-muted" />
+            <div className="h-3 w-11/12 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-9/12 animate-pulse rounded bg-muted" />
           </div>
-        )}
+        </div>
+      ) : null}
 
       {!data && !streamText && !loading && (
           <div className="text-sm text-muted-foreground">
@@ -278,7 +332,11 @@ export function AiSummaryCard({ teamSlug, auto = true, embedded = false, compact
                 </Button>
               </div>
             )}
-            <Markdown>{shownSummary}</Markdown>
+            <div className="relative rounded-xl border bg-background/40 p-3">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+              <StreamingBar active={loading && Boolean(streamText)} className="mb-3" />
+              <Markdown streaming={loading && Boolean(streamText)}>{shownSummary}</Markdown>
+            </div>
           </div>
         )}
     </>

@@ -3,6 +3,7 @@ import { ArrowUpRight, Shield, Sparkles } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
+import { Metric } from "../../../components/ui/metric";
 import { AppShell } from "../../../components/app-shell";
 import { AiSummaryCard } from "../../../components/ai-summary-card";
 import { AiChatCard } from "../../../components/ai-chat-card";
@@ -87,18 +88,9 @@ export default async function TeamPage({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border bg-muted/20 p-3">
-                  <div className="text-xs text-muted-foreground">Members</div>
-                  <div className="mt-1 text-lg font-semibold">{team.members.length}</div>
-                </div>
-                <div className="rounded-lg border bg-muted/20 p-3">
-                  <div className="text-xs text-muted-foreground">Project</div>
-                  <div className="mt-1 text-sm font-semibold">{team.projectName ?? "—"}</div>
-                </div>
-                <div className="rounded-lg border bg-muted/20 p-3">
-                  <div className="text-xs text-muted-foreground">Status</div>
-                  <div className="mt-1 text-sm font-semibold">{team.isActive ? "Active" : "Inactive"}</div>
-                </div>
+                <Metric label="Members" value={team.members.length} />
+                <Metric label="Project" value={team.projectName ?? "—"} className="sm:col-span-1" />
+                <Metric label="Status" value={team.isActive ? "Active" : "Inactive"} className="sm:col-span-1" />
               </div>
 
               {team.githubRepo ? (

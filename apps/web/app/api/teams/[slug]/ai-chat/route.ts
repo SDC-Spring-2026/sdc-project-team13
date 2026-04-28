@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { requireWebUser } from "../../../../../lib/webAuth";
 import { getTeamRecentMessages } from "../../../../../lib/appData";
+import {
+  GeminiAllKeysRateLimitedError,
+  withGeminiKeyRotation
+} from "../../../../../lib/geminiKeys";
 
 export const dynamic = "force-dynamic";
 
@@ -55,11 +59,7 @@ export async function POST(
     return NextResponse.json({ error: "Missing prompt." }, { status: 400 });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-  if (!apiKey) {
-    return NextResponse.json({ error: "Missing GEMINI_API_KEY in env." }, { status: 500 });
-  }
 
   const msgs = await getTeamRecentMessages(userId, teamSlug, 200);
   const transcript = shapeTranscript(msgs, {
@@ -73,14 +73,13 @@ export async function POST(
     "Be concrete and high-signal. Prefer bullet points, checklists, and short headings.",
     "If you don't have evidence in the transcript, say so.",
     "When asked for a plan, propose a short plan + next actions.",
-    "Use markdown formatting (headings, lists, code blocks when needed).",
+    "Always use markdown formatting (headings + lists).",
+    "If you write multiple sentences, you should probably be using bullets instead.",
     "Avoid repetition. Do not restate the user's question verbatim unless necessary.",
     "",
     "Transcript (newest last):",
     transcript || "(no messages)"
   ].join("\n");
-
-  const ai = new GoogleGenAI({ apiKey });
 
   const enc = new TextEncoder();
   const createdAt = new Date().toISOString();
@@ -96,69 +95,85 @@ export async function POST(
           return;
         }
 
-        const anyModels = ai.models as unknown as {
-          generateContentStream?: (args: unknown) => AsyncIterable<unknown>;
-          generateContent?: (args: unknown) => Promise<unknown>;
-        };
-
         const contents = [
           { role: "user", parts: [{ text: system }] },
           { role: "user", parts: [{ text: `User (${userId}) asks: ${promptRaw}` }] }
         ];
 
-        try {
-          if (typeof anyModels.generateContentStream === "function") {
-            const streamOrIter = anyModels.generateContentStream({ model, contents });
+        await withGeminiKeyRotation(async (apiKey) => {
+          const ai = new GoogleGenAI({ apiKey });
+          const anyModels = ai.models as unknown as {
+            generateContentStream?: (args: unknown) => AsyncIterable<unknown>;
+            generateContent?: (args: unknown) => Promise<unknown>;
+          };
 
-            const iter =
-              (await Promise.resolve(streamOrIter)) as unknown as
-                | AsyncIterable<unknown>
-                | { stream?: AsyncIterable<unknown> };
+          try {
+            if (typeof anyModels.generateContentStream === "function") {
+              const streamOrIter = anyModels.generateContentStream({ model, contents });
 
-            const source =
-              typeof (iter as AsyncIterable<unknown>)?.[Symbol.asyncIterator] === "function"
-                ? (iter as AsyncIterable<unknown>)
-                : (iter as { stream?: AsyncIterable<unknown> }).stream;
+              const iter =
+                (await Promise.resolve(streamOrIter)) as unknown as
+                  | AsyncIterable<unknown>
+                  | { stream?: AsyncIterable<unknown> };
 
-            if (source) {
-              for await (const chunk of source) {
-                if (request.signal.aborted) break;
-                const c = chunk as {
-                  text?: string;
-                  candidates?: Array<{
-                    content?: { parts?: Array<{ text?: string }> };
-                  }>;
-                };
-                const delta =
-                  c.text ??
-                  c.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
-                  "";
-                if (delta) controller.enqueue(enc.encode(sseFrame("delta", { delta })));
+              const source =
+                typeof (iter as AsyncIterable<unknown>)?.[Symbol.asyncIterator] === "function"
+                  ? (iter as AsyncIterable<unknown>)
+                  : (iter as { stream?: AsyncIterable<unknown> }).stream;
+
+              if (source) {
+                for await (const chunk of source) {
+                  if (request.signal.aborted) break;
+                  const c = chunk as {
+                    text?: string;
+                    candidates?: Array<{
+                      content?: { parts?: Array<{ text?: string }> };
+                    }>;
+                  };
+                  const delta =
+                    c.text ??
+                    c.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
+                    "";
+                  if (delta) controller.enqueue(enc.encode(sseFrame("delta", { delta })));
+                }
+              } else {
+                throw new Error("Gemini stream is not async iterable");
               }
             } else {
-              throw new Error("Gemini stream is not async iterable");
+              throw new Error("Streaming not supported");
             }
-          } else {
-            throw new Error("Streaming not supported");
+          } catch (e) {
+            const msg = String((e as Error)?.message ?? e);
+            if (msg.includes("RESOURCE_EXHAUSTED") || msg.includes("Quota exceeded") || msg.includes("429")) {
+              throw e;
+            }
+
+            const resp = (await anyModels.generateContent?.({ model, contents })) as {
+              text?: string;
+              candidates?: Array<{
+                content?: { parts?: Array<{ text?: string }> };
+              }>;
+            };
+            const text =
+              resp?.text ??
+              resp?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
+              "";
+            if (text) controller.enqueue(enc.encode(sseFrame("delta", { delta: text })));
           }
-        } catch {
-          const resp = (await anyModels.generateContent?.({ model, contents })) as {
-            text?: string;
-            candidates?: Array<{
-              content?: { parts?: Array<{ text?: string }> };
-            }>;
-          };
-          const text =
-            resp?.text ??
-            resp?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ??
-            "";
-          if (text) controller.enqueue(enc.encode(sseFrame("delta", { delta: text })));
-        }
+
+          return true;
+        });
 
         controller.enqueue(enc.encode(sseFrame("done", { ok: true })));
         controller.close();
       } catch (e) {
-        controller.enqueue(enc.encode(sseFrame("error", { error: String(e) })));
+        if (e instanceof GeminiAllKeysRateLimitedError) {
+          controller.enqueue(
+            enc.encode(sseFrame("error", { error: e.message, retryAfterSeconds: e.retryAfterSeconds }))
+          );
+        } else {
+          controller.enqueue(enc.encode(sseFrame("error", { error: String(e) })));
+        }
         controller.close();
       }
     }
