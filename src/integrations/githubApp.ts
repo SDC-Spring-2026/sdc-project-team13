@@ -54,7 +54,9 @@ async function getAppOctokit() {
 }
 
 /**
- * Creates a private repository under the configured org named after the team slug.
+ * Creates a public repository under the configured org named after the team slug.
+ * Non-team members get read-only access (default for public repos); team members
+ * are granted write access separately via addRepoCollaborator.
  * @param repoName The slug used as the repo's URL name.
  * @param displayName The project name shown as the repo's description in GitHub's UI.
  * Returns the new repo's HTML URL.
@@ -70,7 +72,7 @@ export async function createTeamRepo(
     org,
     name: repoName,
     description: displayName,
-    private: true,
+    private: false,
     auto_init: true
   });
 

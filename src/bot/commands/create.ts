@@ -18,7 +18,7 @@ const logger = createNewLogger("cmd:create");
 /**
  * /create — creates a new project group, sets the creator as the leader.
  * The Discord channel and role are named after the team slug (e.g. sp2026-team1),
- * and a matching private GitHub repo is created under the configured org.
+ * and a matching public GitHub repo is created under the configured org.
  */
 export const createCommand = {
   name: "create",
@@ -162,9 +162,12 @@ export async function handleCreate(interaction: ChatInputCommandInteraction) {
     repoUrl = await createTeamRepo(teamSlug, project);
     await db.setTeamRepo(teamSlug, teamSlug);
 
-    const creatorMember = await db.getMember(interaction.user.id);
-    if (creatorMember?.github) {
-      await addRepoCollaborator(teamSlug, creatorMember.github);
+    const [creatorMember, team] = await Promise.all([
+      db.getMember(interaction.user.id),
+      db.getTeam(teamSlug)
+    ]);
+    if (creatorMember?.github && team?.github_repo) {
+      await addRepoCollaborator(team.github_repo, creatorMember.github);
     }
   } catch (err) {
     logger.error(
