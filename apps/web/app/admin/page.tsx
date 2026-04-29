@@ -9,6 +9,7 @@ import {
   CardTitle
 } from "../../components/ui/card";
 import { requireWebAdmin } from "../../lib/adminAuth";
+import { userProfilePath } from "../../lib/routes";
 import { AdminTools } from "../../components/admin-tools";
 import { maskId } from "../../lib/redact";
 
@@ -22,6 +23,14 @@ export default async function AdminPage() {
       subtitle="Diagnostics, repair, and bot configuration"
       backHref="/dashboard"
       backLabel="Dashboard"
+      rightLinks={[
+        {
+          kind: "link",
+          href: userProfilePath(userId),
+          label: "Account",
+          icon: "user"
+        }
+      ]}
     >
       <div className="space-y-6">
         <Card className="animate-in fade-in-0 slide-in-from-bottom-2 duration-500">

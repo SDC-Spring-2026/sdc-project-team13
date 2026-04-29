@@ -35,7 +35,12 @@ type Snapshot =
     }
   | { error: string; cwd?: string };
 
-export function DbInspectorClient() {
+export function DbInspectorClient({
+  accountHref
+}: {
+  /** Same as roster/profile: `/users/[discordId]` for the signed-in user */
+  accountHref?: string;
+}) {
   const [data, setData] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<string>("");
@@ -78,6 +83,16 @@ export function DbInspectorClient() {
       backHref="/dashboard"
       backLabel="Dashboard"
       rightLinks={[
+        ...(accountHref
+          ? [
+              {
+                kind: "link" as const,
+                href: accountHref,
+                label: "Account",
+                icon: "user" as const
+              }
+            ]
+          : []),
         {
           kind: "node",
           node: (
