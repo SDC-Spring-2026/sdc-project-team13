@@ -9,6 +9,7 @@ import {
 import { Metric } from "../../components/ui/metric";
 import { AppShell } from "../../components/app-shell";
 import { DashboardTeams } from "../../components/dashboard-teams";
+import { userProfilePath } from "../../lib/routes";
 import { requireWebUser } from "../../lib/webAuth";
 import { getClubTeams, getMyTeams } from "../../lib/appData";
 import {
@@ -25,10 +26,10 @@ export default async function DashboardPage() {
   }));
   const canSeeAdmin = flags.isAdmin || flags.isPresident;
   const displayName = await getDiscordDisplayName(userId).catch(() => null);
-  const [teams, clubTeams] = await Promise.all([
-    getMyTeams(userId),
-    getClubTeams(userId, { includeAdminFields: canSeeAdmin })
-  ]);
+  const teams = await getMyTeams(userId);
+  const clubTeams = canSeeAdmin
+    ? await getClubTeams(userId, { includeAdminFields: true })
+    : [];
 
   const leaderTeams = teams.filter((t) => t.permLevel === 1).length;
   const totalMembers = teams.reduce((acc, t) => acc + t.memberCount, 0);
@@ -59,7 +60,12 @@ export default async function DashboardPage() {
               }
             ]
           : []),
-        { kind: "link", href: "/account", label: "Account", icon: "user" }
+        {
+          kind: "link",
+          href: userProfilePath(userId),
+          label: "Account",
+          icon: "user"
+        }
       ]}
     >
       <div className="relative overflow-hidden rounded-2xl border bg-muted/15 p-6">

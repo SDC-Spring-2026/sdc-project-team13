@@ -14,13 +14,6 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import { Metric } from "./ui/metric";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "./ui/select";
 
 type MyTeam = {
   slug: string;
@@ -57,6 +50,7 @@ export function DashboardTeams({
   clubTeams: ClubTeam[];
   canSeeAdmin: boolean;
 }) {
+  const showClub = canSeeAdmin;
   const [tab, setTab] = useState<"my" | "club">("my");
   const [query, setQuery] = useState("");
   const [activeOnly, setActiveOnly] = useState(false);
@@ -109,7 +103,8 @@ export function DashboardTeams({
     return sorted;
   }, [activeOnly, clubTeams, leaderOnly, q, sort]);
 
-  const shown = tab === "my" ? filteredMy : filteredClub;
+  const effectiveTab = showClub ? tab : "my";
+  const shown = effectiveTab === "my" ? filteredMy : filteredClub;
 
   return (
     <section className="mt-8 space-y-4">
@@ -142,19 +137,21 @@ export function DashboardTeams({
           </div>
 
           <Button
-            variant={tab === "my" ? "default" : "outline"}
+            variant={effectiveTab === "my" ? "default" : "outline"}
             className="h-9"
             onClick={() => setTab("my")}
           >
             My teams
           </Button>
-          <Button
-            variant={tab === "club" ? "default" : "outline"}
-            className="h-9"
-            onClick={() => setTab("club")}
-          >
-            SDC teams
-          </Button>
+          {showClub ? (
+            <Button
+              variant={effectiveTab === "club" ? "default" : "outline"}
+              className="h-9"
+              onClick={() => setTab("club")}
+            >
+              SDC teams
+            </Button>
+          ) : null}
 
           <Button
             variant={activeOnly ? "default" : "outline"}
@@ -168,9 +165,9 @@ export function DashboardTeams({
             variant={leaderOnly ? "default" : "outline"}
             className="h-9"
             onClick={() => setLeaderOnly((v) => !v)}
-            disabled={tab !== "my"}
+            disabled={effectiveTab !== "my"}
             title={
-              tab !== "my"
+              effectiveTab !== "my"
                 ? "Leader filter only applies to your teams"
                 : "Only teams you lead"
             }
@@ -178,17 +175,17 @@ export function DashboardTeams({
             Leader
           </Button>
 
-          <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-            <SelectTrigger className="h-9 w-[170px]" aria-label="Sort teams">
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="activity">Activity</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="members">Members</SelectItem>
-              <SelectItem value="messages">Messages</SelectItem>
-            </SelectContent>
-          </Select>
+          <select
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            aria-label="Sort teams"
+          >
+            <option value="activity">Sort: Activity</option>
+            <option value="name">Sort: Name</option>
+            <option value="members">Sort: Members</option>
+            <option value="messages">Sort: Messages</option>
+          </select>
         </div>
       </div>
 
@@ -203,7 +200,7 @@ export function DashboardTeams({
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {tab === "my"
+          {effectiveTab === "my"
             ? (shown as MyTeam[]).map((t, idx) => (
                 <Card
                   key={t.slug}
@@ -306,8 +303,7 @@ export function DashboardTeams({
                       </div>
                     ) : null}
 
-                    {canSeeAdmin &&
-                    (t.githubRepo || t.messageCount !== null) ? (
+                    {canSeeAdmin && (t.githubRepo || t.messageCount !== null) ? (
                       <div className="col-span-2 rounded-xl border bg-background/40 p-3 text-xs text-muted-foreground">
                         {t.githubRepo ? (
                           <div>

@@ -20,6 +20,7 @@ import {
   getDiscordDisplayName,
   getWebAdminFlags
 } from "../../../lib/discordBotApi";
+import { userProfilePath } from "../../../lib/routes";
 
 export default async function TeamPage({
   params
@@ -60,7 +61,14 @@ export default async function TeamPage({
       subtitle={`${team.projectName ?? "No active project"} • ${team.isActive ? "Active" : "Inactive"}`}
       backHref="/dashboard"
       backLabel="Dashboard"
-      rightLinks={[]}
+      rightLinks={[
+        {
+          kind: "link",
+          href: userProfilePath(userId),
+          label: "Account",
+          icon: "user"
+        }
+      ]}
     >
       <div className="space-y-6">
         <section className="grid gap-4 lg:grid-cols-3">

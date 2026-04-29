@@ -1,35 +1,55 @@
 import { CACHE_BOT_INSTRUCTIONS } from "./botInstructions";
+import {
+  GeminiAllKeysRateLimitedError,
+  hasGeminiKeysConfigured,
+  withGeminiKeyRotation
+} from "./geminiKeys";
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
 type GoogleGenAI = import("@google/genai", {
   with: { "resolution-mode": "import" }
 }).GoogleGenAI;
-let ai: GoogleGenAI | null = null;
 
-async function getAiClient(): Promise<GoogleGenAI | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
+async function generateWithKey(
+  apiKey: string,
+  contents: string,
+  model: string
+): Promise<{ text?: string | null }> {
+  const { GoogleGenAI } = await import("@google/genai");
+  const client: GoogleGenAI = new GoogleGenAI({ apiKey });
 
-  if (!apiKey) {
-    return null;
+  try {
+    return await client.models.generateContent({
+      model,
+      contents,
+      config: {
+        systemInstruction: CACHE_BOT_INSTRUCTIONS
+      }
+    });
+  } catch (err) {
+    const raw = err instanceof Error ? err.message : String(err);
+    try {
+      const parsed = JSON.parse(raw) as { error?: { message?: string } };
+      if (parsed?.error?.message) {
+        throw new Error(parsed.error.message);
+      }
+    } catch {
+      // Not JSON payload — preserve original throw
+    }
+    throw err;
   }
-
-  if (!ai) {
-    const { GoogleGenAI } = await import("@google/genai");
-    ai = new GoogleGenAI({ apiKey });
-  }
-
-  return ai;
 }
 
 export async function askCache(
   prompt: string,
   options?: { sessionContext?: string }
 ): Promise<string> {
-  const client = await getAiClient();
-
-  if (!client) {
-    return "AI chat is not configured yet. Add `GEMINI_API_KEY` to your `.env` file.";
+  if (!hasGeminiKeysConfigured()) {
+    return (
+      "AI chat is not configured yet. Add `GEMINI_API_KEY_1` (and optionally `GEMINI_API_KEY_2` / `GEMINI_API_KEY_3`), " +
+      "or legacy `GEMINI_API_KEY`, to your `.env` file."
+    );
   }
 
   const ctx = options?.sessionContext?.trim();
@@ -43,28 +63,32 @@ export async function askCache(
       ].join("\n")
     : prompt;
 
-  let response;
+  const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
+
   try {
-    response = await client.models.generateContent({
-      model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
-      contents,
-      config: {
-        systemInstruction: CACHE_BOT_INSTRUCTIONS
-      }
+    const text = await withGeminiKeyRotation(async (apiKey) => {
+      const response = await generateWithKey(apiKey, contents, model);
+      return response.text?.trim() ?? "";
     });
-  } catch (err) {
-    const raw = err instanceof Error ? err.message : String(err);
+
+    return text.length > 0
+      ? text
+      : "I couldn't generate a response right now. Please try again.";
+  } catch (e) {
+    if (e instanceof GeminiAllKeysRateLimitedError) {
+      return (
+        `Gemini rate limit (all keys cooling down). Please try again in ~${e.retryAfterSeconds}s.`
+      );
+    }
+
+    const raw = e instanceof Error ? e.message : String(e);
     try {
       const parsed = JSON.parse(raw) as { error?: { message?: string } };
       if (parsed?.error?.message) return parsed.error.message;
     } catch {
-      // Not a JSON payload — fall through and rethrow
+      // fall through
     }
-    throw err;
-  }
 
-  const text = response.text?.trim();
-  return text && text.length > 0
-    ? text
-    : "I couldn't generate a response right now. Please try again.";
+    throw e;
+  }
 }

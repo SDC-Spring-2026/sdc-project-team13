@@ -14,6 +14,7 @@ import {
 import { Metric } from "../../../components/ui/metric";
 import { requireWebUser } from "../../../lib/webAuth";
 import { getUserProfile } from "../../../lib/appData";
+import { userProfilePath } from "../../../lib/routes";
 import {
   getDiscordDisplayName,
   getWebAdminFlags
@@ -66,7 +67,14 @@ export default async function UserProfilePage({
         }
         backHref="/dashboard"
         backLabel="Dashboard"
-        rightLinks={[]}
+        rightLinks={[
+          {
+            kind: "link",
+            href: userProfilePath(viewerId),
+            label: "Account",
+            icon: "user"
+          }
+        ]}
       >
         <Card>
           <CardHeader>
@@ -115,7 +123,14 @@ export default async function UserProfilePage({
       }
       backHref="/dashboard"
       backLabel="Dashboard"
-      rightLinks={[]}
+      rightLinks={[
+        {
+          kind: "link",
+          href: userProfilePath(viewerId),
+          label: "Account",
+          icon: "user"
+        }
+      ]}
     >
       <div className="space-y-6">
         <section className="grid gap-4 lg:grid-cols-3">
