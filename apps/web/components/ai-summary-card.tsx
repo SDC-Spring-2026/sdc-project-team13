@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Copy, Sparkles, Square } from "lucide-react";
+import { Copy, Loader2, Sparkles, Square } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -254,12 +254,20 @@ export function AiSummaryCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           {compactHeader ? (
-            <div className="text-xs text-muted-foreground">
-              {shownMeta
-                ? `${new Date(shownMeta.generatedAt).toLocaleString()} • ${shownMeta.model}`
-                : loading
-                  ? "Generating…"
-                  : "Ready"}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {loading ? (
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-muted/40 px-2 py-1 text-[11px] font-medium text-foreground ring-1 ring-inset ring-border">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  Generating
+                </span>
+              ) : null}
+              <span className="truncate">
+                {shownMeta
+                  ? `${new Date(shownMeta.generatedAt).toLocaleString()} • ${shownMeta.model}`
+                  : loading
+                    ? "Connecting…"
+                    : "Ready"}
+              </span>
             </div>
           ) : (
             <>
@@ -308,9 +316,17 @@ export function AiSummaryCard({
     <>
       {embedded ? TopRow : null}
 
+      {loading && (
+        <div className="rounded-lg border bg-background/50 p-2">
+          <StreamingBar
+            active
+            label={streamText ? "Streaming summary…" : "Preparing response…"}
+          />
+        </div>
+      )}
+
       {loading && !streamText ? (
         <div className="space-y-4">
-          <StreamingBar active label="Generating summary" />
           <div className="space-y-2">
             <div className="h-3 w-10/12 animate-pulse rounded bg-muted" />
             <div className="h-3 w-full animate-pulse rounded bg-muted" />

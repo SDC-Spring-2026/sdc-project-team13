@@ -1,4 +1,10 @@
 import "./globals.css";
+import { Inter } from "next/font/google";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap"
+});
 
 export const metadata = {
   title: {
@@ -34,7 +40,10 @@ export default function RootLayout({
         />
       </head>
       {/* Grammarly and similar extensions mutate <body> before React hydrates */}
-      <body suppressHydrationWarning className="min-h-dvh antialiased">
+      <body
+        suppressHydrationWarning
+        className={`${inter.className} min-h-dvh antialiased`}
+      >
         {children}
       </body>
     </html>

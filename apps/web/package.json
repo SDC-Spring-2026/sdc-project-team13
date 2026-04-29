@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@google/genai": "^1.46.0",
+    "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",
     "autoprefixer": "^10.4.21",
     "better-sqlite3": "^12.8.0",

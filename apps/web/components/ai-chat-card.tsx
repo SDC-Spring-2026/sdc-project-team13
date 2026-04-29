@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Copy, Send, Sparkles, Square } from "lucide-react";
+import { Copy, Loader2, Send, Sparkles, Square } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -236,6 +236,12 @@ export function AiChatCard({
               ? `${new Date(meta.createdAt).toLocaleString()} • ${meta.model}`
               : "Uses recent saved messages for context."}
           </div>
+          {loading ? (
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-muted/40 px-2 py-1 text-[11px] font-medium text-foreground ring-1 ring-inset ring-border">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              {stream ? "Streaming" : "Loading"}
+            </span>
+          ) : null}
           <Button
             variant="ghost"
             className="h-8 px-2"
@@ -254,7 +260,7 @@ export function AiChatCard({
       <div className="space-y-2">
         <StreamingBar
           active={loading}
-          label={stream ? "Assistant is responding" : "Starting"}
+          label={stream ? "Assistant is responding" : "Connecting…"}
         />
         {renderedMsgs.length === 0 ? (
           <div className="text-sm text-muted-foreground">
@@ -300,6 +306,9 @@ export function AiChatCard({
         {loading && !stream ? (
           <div className="rounded-lg border bg-background p-3 text-sm">
             <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">
+                Cache is thinking…
+              </div>
               <div className="h-3 w-10/12 animate-pulse rounded bg-muted" />
               <div className="h-3 w-full animate-pulse rounded bg-muted" />
               <div className="h-3 w-9/12 animate-pulse rounded bg-muted" />

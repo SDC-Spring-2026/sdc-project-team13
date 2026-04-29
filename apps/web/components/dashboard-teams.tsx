@@ -14,6 +14,13 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import { Metric } from "./ui/metric";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "./ui/select";
 
 type MyTeam = {
   slug: string;
@@ -171,16 +178,17 @@ export function DashboardTeams({
             Leader
           </Button>
 
-          <select
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-          >
-            <option value="activity">Sort: Activity</option>
-            <option value="name">Sort: Name</option>
-            <option value="members">Sort: Members</option>
-            <option value="messages">Sort: Messages</option>
-          </select>
+          <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+            <SelectTrigger className="h-9 w-[170px]" aria-label="Sort teams">
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="activity">Activity</SelectItem>
+              <SelectItem value="name">Name</SelectItem>
+              <SelectItem value="members">Members</SelectItem>
+              <SelectItem value="messages">Messages</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
