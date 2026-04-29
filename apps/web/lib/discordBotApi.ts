@@ -35,6 +35,26 @@ export async function getDiscordGuildMember(
   return (await r.json()) as GuildMember;
 }
 
+export async function searchDiscordGuildMemberId(
+  query: string
+): Promise<string | null> {
+  loadEnvConfig(process.cwd());
+  const guildId = process.env.DISCORD_GUILD_ID;
+  const botToken = process.env.DISCORD_TOKEN;
+  const q = query.trim().replace(/^@+/, "");
+  if (!guildId || !botToken || !q) return null;
+
+  const url = `https://discord.com/api/v10/guilds/${guildId}/members/search?query=${encodeURIComponent(q)}&limit=1`;
+  const r = await fetch(url, {
+    headers: { authorization: `Bot ${botToken}` },
+    cache: "no-store"
+  });
+  if (!r.ok) return null;
+  const arr = (await r.json()) as GuildMember[];
+  const id = arr?.[0]?.user?.id;
+  return id ? String(id) : null;
+}
+
 export async function getWebAdminFlags(
   userId: string
 ): Promise<{ isAdmin: boolean; isPresident: boolean }> {

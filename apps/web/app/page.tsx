@@ -1,4 +1,4 @@
-import { ArrowRight, Database, Shield } from "lucide-react";
+import { ArrowRight, MessageSquareText, Shield, Sparkles } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -59,29 +59,28 @@ export default function HomePage() {
                     Permission-aware
                   </CardTitle>
                   <CardDescription>
-                    Only see what you’re allowed to see—mirrors team membership
-                    and roles.
+                    See the teams you’re on and what’s relevant to you.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground">
-                  Admin-only tooling stays admin-only. No raw IDs or message
-                  history exposed in the normal UI.
+                  Your dashboard is built from your Discord membership so you
+                  can jump in fast.
                 </CardContent>
               </Card>
 
               <Card className="animate-in fade-in-0 slide-in-from-bottom-2 duration-500 [animation-delay:180ms]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Database className="h-4 w-4 text-primary" />
-                    AI + dashboards
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    AI summaries
                   </CardTitle>
                   <CardDescription>
-                    Auto summaries + a team assistant that streams responses.
+                    Get a quick, structured recap of what’s going on.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground">
-                  Summaries are generated from saved context server-side—clean
-                  output, fast iteration.
+                  Status, decisions, action items, blockers, and open questions
+                  in an easy-to-skim format.
                 </CardContent>
               </Card>
             </div>
@@ -92,11 +91,7 @@ export default function HomePage() {
               <CardHeader>
                 <CardTitle>Sign in</CardTitle>
                 <CardDescription>
-                  Uses Discord OAuth (
-                  <code className="rounded bg-muted px-1.5 py-0.5">
-                    identify
-                  </code>
-                  ) and stores a server session cookie.
+                  Continue with Discord to view your teams.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-muted-foreground">
@@ -105,17 +100,23 @@ export default function HomePage() {
                     What you’ll get
                   </div>
                   <ul className="mt-2 list-disc space-y-1 pl-5">
-                    <li>Team dashboards</li>
-                    <li>Auto AI summary (markdown)</li>
-                    <li>Ask Cache (streaming assistant)</li>
+                    <li className="flex items-center gap-2">
+                      <MessageSquareText className="h-4 w-4 text-primary" />
+                      Team dashboards
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      Auto summaries (status • action items • blockers)
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      Ask Cache: a streaming team assistant
+                    </li>
                   </ul>
                 </div>
                 <div className="rounded-md border bg-muted/30 p-3">
-                  If Discord name isn’t showing, set{" "}
-                  <code className="rounded bg-muted px-1.5 py-0.5">
-                    DISCORD_GUILD_ID
-                  </code>{" "}
-                  and ensure the bot token can read member info.
+                  Tip: After signing in, open a team to see an auto summary and
+                  use Ask Cache for next steps.
                 </div>
               </CardContent>
               <CardFooter>
@@ -126,14 +127,6 @@ export default function HomePage() {
             </Card>
           </div>
         </section>
-
-        <footer className="mt-auto pt-10 text-xs text-muted-foreground">
-          Tip: In production, keep{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5">
-            ALLOW_DB_INSPECTOR
-          </code>{" "}
-          off unless you explicitly need it.
-        </footer>
       </div>
     </main>
   );

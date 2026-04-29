@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { requireWebUser } from "../../../../../lib/webAuth";
 import { getTeamRecentMessages } from "../../../../../lib/appData";
+import { getWebAdminFlags } from "../../../../../lib/discordBotApi";
 import {
   GeminiAllKeysRateLimitedError,
   withGeminiKeyRotation
@@ -65,7 +66,15 @@ export async function POST(
 
   const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
-  const msgs = await getTeamRecentMessages(userId, teamSlug, 200);
+  const flags = await getWebAdminFlags(userId).catch(() => ({
+    isAdmin: false,
+    isPresident: false
+  }));
+  const canSeeAdmin = flags.isAdmin || flags.isPresident;
+
+  const msgs = await getTeamRecentMessages(userId, teamSlug, 200, {
+    allowAdminView: canSeeAdmin
+  });
   const transcript = shapeTranscript(msgs, {
     maxLines: 120,
     maxLineChars: 600,

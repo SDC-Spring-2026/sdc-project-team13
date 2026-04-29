@@ -24,6 +24,36 @@ type Props = {
 type Meta = { generatedAt: string; model: string; teamSlug: string };
 type ApiResp = { summary: string; meta: Meta } | { error: string };
 
+function pruneEmptySections(md: string): string {
+  const txt = md.replace(/\r\n/g, "\n").trim();
+  if (!txt) return "";
+
+  const parts = txt.split(/\n(?=##\s+)/g);
+  const kept: string[] = [];
+
+  for (const chunk of parts) {
+    const lines = chunk.split("\n");
+    const heading = lines[0]?.trim() ?? "";
+    const isHeading = heading.startsWith("## ");
+    if (!isHeading) continue;
+
+    const bodyLines = lines.slice(1);
+    const hasRealBullet = bodyLines.some((l) => {
+      const t = l.trim();
+      if (!t.startsWith("-")) return false;
+      const content = t.replace(/^-+\s*/, "");
+      return Boolean(content) && content !== "-" && content !== "—";
+    });
+
+    if (heading === "## Status" || hasRealBullet) {
+      const cleanedBody = bodyLines.filter((l) => l.trim() !== "-").join("\n");
+      kept.push([heading, cleanedBody].filter(Boolean).join("\n").trim());
+    }
+  }
+
+  return kept.join("\n\n").trim();
+}
+
 function safeJsonParse(s: string): unknown {
   try {
     return JSON.parse(s);
@@ -54,6 +84,7 @@ export function AiSummaryCard({
   compactHeader = true
 }: Props) {
   const [loading, setLoading] = useState(false);
+  const [autoPending, setAutoPending] = useState<boolean>(auto);
   const [data, setData] = useState<ApiResp | null>(null);
   const [streamText, setStreamText] = useState<string>("");
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -74,6 +105,7 @@ export function AiSummaryCard({
     // New team => allow auto-run again.
     autoRanRef.current = false;
     setCooldownUntilMs(null);
+    setAutoPending(Boolean(auto));
   }, [teamSlug]);
 
   const run = useCallback(async () => {
@@ -191,6 +223,7 @@ export function AiSummaryCard({
                 ? payload.delta
                 : "";
             if (delta) {
+              setAutoPending(false);
               full += delta;
               setStreamText(full);
             }
@@ -202,6 +235,7 @@ export function AiSummaryCard({
             const retryAfter = parseRetryAfterSeconds(err);
             if (retryAfter) setCooldownUntilMs(Date.now() + retryAfter * 1000);
             setData({ error: err });
+            setAutoPending(false);
           } else if (ev === "done") {
             // finalize into data so we can keep it if user regenerates
             setData({
@@ -214,6 +248,7 @@ export function AiSummaryCard({
                   teamSlug
                 } satisfies Meta)
             });
+            setAutoPending(false);
           }
         }
       }
@@ -222,6 +257,9 @@ export function AiSummaryCard({
       setData({ error: String(e) });
     } finally {
       setLoading(false);
+      // Keep autoPending true until we either receive output or terminate; but if
+      // the request ended without output, clear it so the UI can show an error/idle state.
+      setAutoPending((v) => (streamText ? false : v));
     }
   }, [teamSlug]);
 
@@ -233,16 +271,22 @@ export function AiSummaryCard({
     if (data || streamText) return;
     if (cooldownUntilMs && Date.now() < cooldownUntilMs) return;
     autoRanRef.current = true;
+    setAutoPending(true);
     void run();
   }, [auto, cooldownUntilMs, data, loading, run, streamText]);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
     setLoading(false);
+    setAutoPending(false);
   }, []);
 
-  const shownSummary =
+  const shownSummaryRaw =
     (data && "summary" in data ? data.summary : "") || streamText;
+  const shownSummary = useMemo(
+    () => pruneEmptySections(shownSummaryRaw),
+    [shownSummaryRaw]
+  );
   const shownMeta = data && "summary" in data ? data.meta : meta;
   const cooldownLeftSeconds = useMemo(() => {
     if (!cooldownUntilMs) return 0;
@@ -316,16 +360,16 @@ export function AiSummaryCard({
     <>
       {embedded ? TopRow : null}
 
-      {loading && (
+      {(autoPending || loading) && !shownSummary.trim() && (
         <div className="rounded-lg border bg-background/50 p-2">
           <StreamingBar
             active
-            label={streamText ? "Streaming summary…" : "Preparing response…"}
+            label={loading ? "Preparing response…" : "Starting…"}
           />
         </div>
       )}
 
-      {loading && !streamText ? (
+      {(autoPending || loading) && !shownSummary.trim() ? (
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="h-3 w-10/12 animate-pulse rounded bg-muted" />
@@ -336,9 +380,9 @@ export function AiSummaryCard({
         </div>
       ) : null}
 
-      {!data && !streamText && !loading && (
+      {!data && !streamText && !loading && !autoPending && !auto && (
         <div className="text-sm text-muted-foreground">
-          Click generate to summarize recent saved messages.
+          Click refresh to summarize recent saved messages.
         </div>
       )}
 

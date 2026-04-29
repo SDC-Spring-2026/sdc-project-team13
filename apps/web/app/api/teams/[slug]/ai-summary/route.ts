@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { requireWebUser } from "../../../../../lib/webAuth";
 import { getTeamRecentMessages } from "../../../../../lib/appData";
+import { getWebAdminFlags } from "../../../../../lib/discordBotApi";
 import {
   GeminiAllKeysRateLimitedError,
   withGeminiKeyRotation
@@ -58,7 +59,15 @@ export async function POST(
 
   const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
-  const msgs = await getTeamRecentMessages(userId, teamSlug, 120);
+  const flags = await getWebAdminFlags(userId).catch(() => ({
+    isAdmin: false,
+    isPresident: false
+  }));
+  const canSeeAdmin = flags.isAdmin || flags.isPresident;
+
+  const msgs = await getTeamRecentMessages(userId, teamSlug, 120, {
+    allowAdminView: canSeeAdmin
+  });
   const transcript = shapeTranscript(msgs, {
     maxLines: 100,
     maxLineChars: 600,
@@ -71,8 +80,8 @@ export async function POST(
     "",
     "Return MARKDOWN ONLY (no preamble).",
     "Output MUST start with `## Status` on the first line.",
-    "You MUST use these exact headings (including the leading `##`).",
-    "Under every heading, use `- ` bullets only (no paragraphs).",
+    "Use ONLY these headings (including the leading `##`).",
+    "Under each heading, use `- ` bullets only (no paragraphs).",
     "Use short, skimmable bullets. Prefer bold for key nouns (e.g. **Objective**, **Owner**, **Due**).",
     "",
     "Use this exact structure and keep it crisp:",
@@ -80,22 +89,23 @@ export async function POST(
     "- (2-4 bullets)",
     "",
     "## Decisions",
-    "- (bullets, only if any)",
+    "- (ONLY include this section if there are real decisions)",
     "",
     "## Action items",
-    "- (bullets; include owner if inferable like @name; otherwise omit owner)",
+    "- (ONLY include this section if there are real action items; include owner if inferable like @name)",
     "",
     "## Risks / blockers",
-    "- (bullets, only if any)",
+    "- (ONLY include this section if there are real risks/blockers)",
     "",
     "## Open questions",
-    "- (bullets, only if any)",
+    "- (ONLY include this section if there are real open questions)",
     "",
     "Constraints:",
     "- Prefer concrete next steps over vague commentary.",
     "- If the transcript seems jokey/off-topic, say so and focus on actionable items anyway.",
     "- Do NOT repeat the team slug or restate the prompt.",
     "- Never emit a plain-text label like `Status` without the `##` prefix.",
+    "- Do NOT output empty sections or placeholder bullets like `-`.",
     "",
     "Mini-example of formatting (not content):",
     "## Status",

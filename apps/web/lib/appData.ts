@@ -1,6 +1,7 @@
 import { loadEnvConfig } from "@next/env";
 import { tbl } from "./physicalTables";
 import { openWebDb } from "./webDb";
+import { searchDiscordGuildMemberId } from "./discordBotApi";
 
 export type MyTeam = {
   slug: string;
@@ -46,6 +47,220 @@ export type TeamMessage = {
   timestamp: string | null;
   content: string | null;
 };
+
+export type UserTeamInvolvement = {
+  teamSlug: string;
+  permLevel: number;
+  isActive: boolean;
+  projectName: string | null;
+};
+
+export type UserProfile = {
+  userId: string;
+  github: string | null;
+  teams: UserTeamInvolvement[];
+};
+
+async function resolveUserId(
+  conn: ReturnType<typeof openWebDb>,
+  idOrHandle: string
+): Promise<{ userId: string; github: string | null } | null> {
+  const raw = idOrHandle.trim().replace(/^@+/, "");
+  if (!raw) return null;
+  const isId = /^[0-9]{6,}$/.test(raw);
+
+  if (conn.driver === "postgres") {
+    if (isId) {
+      const r = await conn.pool.query(
+        `SELECT discord, github FROM ${tbl("members")} WHERE discord = $1 LIMIT 1`,
+        [raw]
+      );
+      const row = r.rows[0] as
+        | { discord: string; github: string | null }
+        | undefined;
+      if (!row) return { userId: raw, github: null };
+      return {
+        userId: String(row.discord),
+        github: (row.github as string | null) ?? null
+      };
+    }
+    const r = await conn.pool.query(
+      `SELECT discord, github FROM ${tbl("members")} WHERE LOWER(github) = LOWER($1) LIMIT 1`,
+      [raw]
+    );
+    const row = r.rows[0] as
+      | { discord: string; github: string | null }
+      | undefined;
+    if (!row) {
+      const discordId = await searchDiscordGuildMemberId(raw);
+      if (!discordId) return null;
+      const r2 = await conn.pool.query(
+        `SELECT discord, github FROM ${tbl("members")} WHERE discord = $1 LIMIT 1`,
+        [discordId]
+      );
+      const row2 = r2.rows[0] as
+        | { discord: string; github: string | null }
+        | undefined;
+      return {
+        userId: discordId,
+        github: (row2?.github as string | null) ?? null
+      };
+    }
+    return {
+      userId: String(row.discord),
+      github: (row.github as string | null) ?? null
+    };
+  }
+
+  if (isId) {
+    const row = conn.db
+      .prepare(
+        `SELECT discord as discord, github as github FROM ${tbl("members")} WHERE discord = ? LIMIT 1`
+      )
+      .get(raw) as { discord: string; github: string | null } | undefined;
+    if (!row) return { userId: raw, github: null };
+    return { userId: String(row.discord), github: row.github ?? null };
+  }
+
+  const row = conn.db
+    .prepare(
+      `SELECT discord as discord, github as github FROM ${tbl("members")} WHERE LOWER(github) = LOWER(?) LIMIT 1`
+    )
+    .get(raw) as { discord: string; github: string | null } | undefined;
+  if (!row) {
+    const discordId = await searchDiscordGuildMemberId(raw);
+    if (!discordId) return null;
+    const row2 = conn.db
+      .prepare(
+        `SELECT discord as discord, github as github FROM ${tbl("members")} WHERE discord = ? LIMIT 1`
+      )
+      .get(discordId) as { discord: string; github: string | null } | undefined;
+    return { userId: discordId, github: row2?.github ?? null };
+  }
+  return { userId: String(row.discord), github: row.github ?? null };
+}
+
+async function assertProfileViewAllowed(
+  conn: ReturnType<typeof openWebDb>,
+  viewerId: string,
+  targetUserId: string,
+  opts?: { allowAdminView?: boolean }
+) {
+  if (opts?.allowAdminView) return;
+  if (viewerId === targetUserId) return;
+
+  if (conn.driver === "postgres") {
+    const r = await conn.pool.query(
+      `
+      SELECT 1
+      FROM ${tbl("teamAssociations")} a
+      JOIN ${tbl("teamAssociations")} b ON b.team_slug = a.team_slug
+      WHERE a.user_id = $1 AND b.user_id = $2
+      LIMIT 1
+      `,
+      [viewerId, targetUserId]
+    );
+    if (!r.rows[0]) throw new Error("FORBIDDEN");
+    return;
+  }
+
+  const row = conn.db
+    .prepare(
+      `
+      SELECT 1
+      FROM ${tbl("teamAssociations")} a
+      JOIN ${tbl("teamAssociations")} b ON b.team_slug = a.team_slug
+      WHERE a.user_id = ? AND b.user_id = ?
+      LIMIT 1
+      `
+    )
+    .get(viewerId, targetUserId) as { 1: number } | undefined;
+  if (!row) throw new Error("FORBIDDEN");
+}
+
+export async function getUserProfile(
+  viewerId: string,
+  idOrHandle: string,
+  opts?: { allowAdminView?: boolean }
+): Promise<UserProfile> {
+  loadEnvConfig(process.cwd());
+  const conn = openWebDb();
+  try {
+    const resolved = await resolveUserId(conn, idOrHandle);
+    if (!resolved) throw new Error("NOT_FOUND");
+
+    await assertProfileViewAllowed(conn, viewerId, resolved.userId, opts);
+
+    if (conn.driver === "postgres") {
+      const r = await conn.pool.query(
+        `
+        SELECT
+          a.team_slug,
+          a.perm_level,
+          t.is_active,
+          p.name AS project_name
+        FROM ${tbl("teamAssociations")} a
+        JOIN ${tbl("teams")} t ON t.slug = a.team_slug
+        LEFT JOIN (
+          SELECT DISTINCT ON (team_slug) team_slug, name
+          FROM ${tbl("projects")}
+          WHERE is_active = TRUE
+          ORDER BY team_slug, slug ASC
+        ) p ON p.team_slug = t.slug
+        WHERE a.user_id = $1
+        ORDER BY a.perm_level DESC, a.team_slug ASC
+        `,
+        [resolved.userId]
+      );
+
+      return {
+        userId: resolved.userId,
+        github: resolved.github,
+        teams: r.rows.map((row) => ({
+          teamSlug: String(row.team_slug),
+          permLevel: Number(row.perm_level ?? 0),
+          isActive: Boolean(row.is_active),
+          projectName: (row.project_name as string | null) ?? null
+        }))
+      };
+    }
+
+    const rows = conn.db
+      .prepare(
+        `
+        SELECT
+          a.team_slug as teamSlug,
+          a.perm_level as permLevel,
+          t.is_active as isActive,
+          (SELECT p.name FROM ${tbl("projects")} p WHERE p.team_slug = t.slug AND p.is_active = 1 ORDER BY p.slug ASC LIMIT 1) AS projectName
+        FROM ${tbl("teamAssociations")} a
+        JOIN ${tbl("teams")} t ON t.slug = a.team_slug
+        WHERE a.user_id = ?
+        ORDER BY a.perm_level DESC, a.team_slug ASC
+        `
+      )
+      .all(resolved.userId) as Array<{
+      teamSlug: string;
+      permLevel: number;
+      isActive: number;
+      projectName: string | null;
+    }>;
+
+    return {
+      userId: resolved.userId,
+      github: resolved.github,
+      teams: rows.map((row) => ({
+        teamSlug: row.teamSlug,
+        permLevel: Number(row.permLevel ?? 0),
+        isActive: Boolean(row.isActive),
+        projectName: row.projectName ?? null
+      }))
+    };
+  } finally {
+    if (conn.driver === "postgres") await conn.close();
+    else conn.close();
+  }
+}
 
 export async function getMyTeams(userId: string): Promise<MyTeam[]> {
   loadEnvConfig(process.cwd());
@@ -245,7 +460,8 @@ export async function getClubTeams(
 async function assertTeamMembership(
   conn: ReturnType<typeof openWebDb>,
   userId: string,
-  teamSlug: string
+  teamSlug: string,
+  opts?: { allowAdminView?: boolean }
 ): Promise<number> {
   if (conn.driver === "postgres") {
     const r = await conn.pool.query(
@@ -253,7 +469,10 @@ async function assertTeamMembership(
       [userId, teamSlug]
     );
     const row = r.rows[0] as { perm_level: number } | undefined;
-    if (!row) throw new Error("FORBIDDEN");
+    if (!row) {
+      if (opts?.allowAdminView) return 0;
+      throw new Error("FORBIDDEN");
+    }
     return Number(row.perm_level ?? 0);
   }
   const row = conn.db
@@ -261,18 +480,22 @@ async function assertTeamMembership(
       `SELECT perm_level as permLevel FROM ${tbl("teamAssociations")} WHERE user_id = ? AND team_slug = ? LIMIT 1`
     )
     .get(userId, teamSlug) as { permLevel: number } | undefined;
-  if (!row) throw new Error("FORBIDDEN");
+  if (!row) {
+    if (opts?.allowAdminView) return 0;
+    throw new Error("FORBIDDEN");
+  }
   return Number(row.permLevel ?? 0);
 }
 
 export async function getTeamOverview(
   userId: string,
-  teamSlug: string
+  teamSlug: string,
+  opts?: { allowAdminView?: boolean }
 ): Promise<TeamOverview> {
   loadEnvConfig(process.cwd());
   const conn = openWebDb();
   try {
-    await assertTeamMembership(conn, userId, teamSlug);
+    await assertTeamMembership(conn, userId, teamSlug, opts);
 
     if (conn.driver === "postgres") {
       const [teamR, membersR, projectR] = await Promise.all([
@@ -367,12 +590,13 @@ export async function getTeamOverview(
 export async function getTeamRecentMessages(
   userId: string,
   teamSlug: string,
-  limit: number
+  limit: number,
+  opts?: { allowAdminView?: boolean }
 ): Promise<TeamMessage[]> {
   loadEnvConfig(process.cwd());
   const conn = openWebDb();
   try {
-    await assertTeamMembership(conn, userId, teamSlug);
+    await assertTeamMembership(conn, userId, teamSlug, opts);
     const safeLimit = Math.max(1, Math.min(200, Math.floor(limit)));
 
     if (conn.driver === "postgres") {

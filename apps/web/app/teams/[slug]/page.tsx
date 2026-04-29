@@ -1,4 +1,5 @@
 import { loadEnvConfig } from "@next/env";
+import Link from "next/link";
 import { ArrowUpRight, Shield, Sparkles } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import {
@@ -15,7 +16,10 @@ import { AiSummaryCard } from "../../../components/ai-summary-card";
 import { AiChatCard } from "../../../components/ai-chat-card";
 import { requireWebUser } from "../../../lib/webAuth";
 import { getTeamOverview } from "../../../lib/appData";
-import { getDiscordDisplayName } from "../../../lib/discordBotApi";
+import {
+  getDiscordDisplayName,
+  getWebAdminFlags
+} from "../../../lib/discordBotApi";
 
 export default async function TeamPage({
   params
@@ -27,7 +31,15 @@ export default async function TeamPage({
   const teamSlug = decodeURIComponent(slug);
 
   const { userId } = await requireWebUser();
-  const team = await getTeamOverview(userId, teamSlug);
+  const flags = await getWebAdminFlags(userId).catch(() => ({
+    isAdmin: false,
+    isPresident: false
+  }));
+  const canSeeAdmin = flags.isAdmin || flags.isPresident;
+
+  const team = await getTeamOverview(userId, teamSlug, {
+    allowAdminView: canSeeAdmin
+  });
   const nameById = new Map(
     await Promise.all(
       team.members.map(
@@ -99,17 +111,17 @@ export default async function TeamPage({
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-1">
                 <Metric label="Members" value={team.members.length} />
                 <Metric
                   label="Project"
                   value={team.projectName ?? "—"}
-                  className="sm:col-span-1"
+                  className="col-span-2 sm:col-span-1 lg:col-span-1"
                 />
                 <Metric
                   label="Status"
                   value={team.isActive ? "Active" : "Inactive"}
-                  className="sm:col-span-1"
+                  className="lg:col-span-1"
                 />
               </div>
 
@@ -175,9 +187,13 @@ export default async function TeamPage({
                   className="flex items-center justify-between rounded-lg border bg-background px-3 py-2 transition-colors hover:bg-muted/20"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-foreground">
+                    <Link
+                      href={`/users/${encodeURIComponent(m.discordId)}`}
+                      className="block truncate text-sm font-medium text-foreground underline-offset-4 hover:underline"
+                      prefetch={false}
+                    >
                       {nameById.get(m.discordId) ?? m.github ?? "Member"}
-                    </div>
+                    </Link>
                     <div className="truncate text-xs text-muted-foreground">
                       {m.github ? "GitHub linked" : "GitHub not linked"}
                     </div>

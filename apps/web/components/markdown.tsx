@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -20,6 +21,10 @@ function isMentionToken(tok: string) {
   return true;
 }
 
+function isUserIdToken(tok: string) {
+  return /^user:\s*\d{6,}$/i.test(tok.trim());
+}
+
 function remarkMentions() {
   return (tree: MdNode) => {
     const walk = (node: MdNode) => {
@@ -30,14 +35,23 @@ function remarkMentions() {
       const next: MdNode[] = [];
       for (const ch of kids) {
         if (ch?.type === "text" && typeof ch.value === "string") {
-          const parts = ch.value.split(/(\B@[a-z0-9][a-z0-9_-]{1,31}\b)/gi);
+          const parts = ch.value.split(
+            /(\buser:\s*\d{6,}\b|\B@[a-z0-9][a-z0-9_-]{1,31}\b)/gi
+          );
           for (const part of parts) {
-            if (part && isMentionToken(part.replace(/^\B/, ""))) {
+            if (part && isUserIdToken(part)) {
+              const digits = part.replace(/^user:\s*/i, "").trim();
+              next.push({
+                type: "link",
+                url: `/users/${encodeURIComponent(digits)}`,
+                children: [{ type: "text", value: `user:${digits}` }]
+              });
+            } else if (part && isMentionToken(part.replace(/^\B/, ""))) {
               // Note: split keeps \B marker out; normalize just in case.
               const token = part.replace(/^\B/, "");
               next.push({
                 type: "link",
-                url: `mention:${token.slice(1)}`,
+                url: `/users/${encodeURIComponent(token.slice(1))}`,
                 children: [{ type: "text", value: token }]
               });
             } else if (part) {
@@ -54,6 +68,24 @@ function remarkMentions() {
 
     walk(tree);
   };
+}
+
+function MentionPill({
+  href,
+  children
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      prefetch={false}
+      className="not-prose inline-flex items-center rounded-md bg-[#5865F2]/15 px-1.5 py-0.5 font-medium text-[#4752C4] ring-1 ring-inset ring-[#5865F2]/25 hover:bg-[#5865F2]/22 dark:bg-[#5865F2]/25 dark:text-[#C9CDFB] dark:ring-[#5865F2]/35"
+    >
+      {children}
+    </Link>
+  );
 }
 
 export function Markdown({
@@ -99,15 +131,9 @@ export function Markdown({
             </li>
           ),
           a: ({ children, href, ...props }) => {
-            if (typeof href === "string" && href.startsWith("mention:")) {
-              return (
-                <span
-                  {...props}
-                  className="inline-flex items-center rounded-md bg-[#5865F2]/15 px-1.5 py-0.5 font-medium text-[#4752C4] ring-1 ring-inset ring-[#5865F2]/25 dark:bg-[#5865F2]/25 dark:text-[#C9CDFB] dark:ring-[#5865F2]/35"
-                >
-                  {children}
-                </span>
-              );
+            if (typeof href === "string" && href.startsWith("/users/")) {
+              // Avoid prose link styling affecting the pill.
+              return <MentionPill href={href}>{children}</MentionPill>;
             }
             return (
               <a
