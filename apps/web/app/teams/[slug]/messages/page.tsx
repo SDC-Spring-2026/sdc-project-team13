@@ -11,6 +11,7 @@ import {
 } from "../../../../components/ui/card";
 import { Separator } from "../../../../components/ui/separator";
 import { AppShell } from "../../../../components/app-shell";
+import { userProfilePath } from "../../../../lib/routes";
 import { requireWebAdmin } from "../../../../lib/adminAuth";
 import { getTeamRecentMessages } from "../../../../lib/appData";
 import { maskId } from "../../../../lib/redact";
@@ -25,6 +26,7 @@ export default async function TeamMessagesPage({
   const teamSlug = decodeURIComponent(slug);
 
   const { userId } = await requireWebAdmin();
+  const accountHref = userProfilePath(userId);
   const messages = await getTeamRecentMessages(userId, teamSlug, 120);
 
   return (
@@ -46,6 +48,12 @@ export default async function TeamMessagesPage({
               </Link>
             </Button>
           )
+        },
+        {
+          kind: "link",
+          href: accountHref,
+          label: "Account",
+          icon: "user"
         }
       ]}
     >
